@@ -27,7 +27,70 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.phone = validated_data.get('phone', instance.phone)
         instance.profile_pic = validated_data.get('profile_pic', instance.profile_pic)
         instance.save()
-        return instance
+        return instance 
+    
+
+class AddUserSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(write_only=True)
+    last_name = serializers.CharField(write_only=True)
+    email = serializers.EmailField()
+    contact_number = serializers.CharField(required=False, allow_blank=True, source='phone')
+    branch = serializers.CharField(required=True)
+    department = serializers.CharField(required=True)
+    role = serializers.CharField(required=True)
+    reporting_to = serializers.CharField(required=False, allow_blank=True)
+    available_branches = serializers.CharField(required=False, allow_blank=True)
+    employee_id = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'first_name', 'last_name', 'email', 'contact_number', 'branch',
+            'department', 'role', 'reporting_to', 'available_branches', 'employee_id'
+        ]
+
+    def validate_email(self, value):
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def validate_employee_id(self, value):
+        if value and Profile.objects.filter(employee_id=value).exists():
+            raise serializers.ValidationError("A user with this Employee ID already exists.")
+        return value
+
+    def create(self, validated_data):
+        # Combine first_name and last_name into full_name
+        first_name = validated_data.pop('first_name')
+        last_name = validated_data.pop('last_name')
+        full_name = f"{first_name} {last_name}".strip()
+
+        # Extract profile-related fields
+        profile_data = {
+            'phone': validated_data.pop('phone', ''),
+            'branch': validated_data.pop('branch'),
+            'department': validated_data.pop('department'),
+            'role': validated_data.pop('role'),
+            'reporting_to': validated_data.pop('reporting_to', ''),
+            'available_branches': validated_data.pop('available_branches', ''),
+            'employee_id': validated_data.pop('employee_id', ''),
+        }
+
+        # Generate a default password (e.g., 'default_password_123')
+        # In a production environment, you might want to email the user a temporary password or a reset link
+        default_password = "default_password_123"
+
+        # Create the CustomUser
+        user = CustomUser.objects.create_user(
+            email=validated_data['email'],
+            full_name=full_name,
+            password=default_password
+        )
+
+        # Create the associated Profile
+        Profile.objects.create(user=user, **profile_data)
+
+        return user
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -174,3 +237,166 @@ class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = ['id', 'name', 'email', 'position', 'hire_date', 'created_at']
+
+
+from rest_framework import serializers
+from .models import Product, Category, TaxCode, UOM, Warehouse, Size, Color, Supplier
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
+class TaxCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxCode
+        fields = ['id', 'tax_name', 'tax_percentage', 'description']
+
+class UOMSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UOM
+        fields = ['id', 'uom_name', 'items', 'description']
+
+class WarehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Warehouse
+        fields = ['id', 'warehouse_name', 'location', 'manager_name', 'contact_info', 'notes']
+
+class SizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Size
+        fields = ['id', 'name']
+
+class ColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Color
+        fields = ['id', 'name']
+
+class SupplierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Supplier
+        fields = ['id', 'supplier_name', 'contact_person', 'phone_number', 'email_address', 'address']
+
+class ProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True
+    )
+    tax_code = TaxCodeSerializer(read_only=True)
+    tax_code_id = serializers.PrimaryKeyRelatedField(
+        queryset=TaxCode.objects.all(), source='tax_code', write_only=True
+    )
+    uom = UOMSerializer(read_only=True)
+    uom_id = serializers.PrimaryKeyRelatedField(
+        queryset=UOM.objects.all(), source='uom', write_only=True
+    )
+    warehouse = WarehouseSerializer(read_only=True)
+    warehouse_id = serializers.PrimaryKeyRelatedField(
+        queryset=Warehouse.objects.all(), source='warehouse', write_only=True
+    )
+    size = SizeSerializer(read_only=True)
+    size_id = serializers.PrimaryKeyRelatedField(
+        queryset=Size.objects.all(), source='size', write_only=True
+    )
+    color = ColorSerializer(read_only=True)
+    color_id = serializers.PrimaryKeyRelatedField(
+        queryset=Color.objects.all(), source='color', write_only=True
+    )
+    supplier = SupplierSerializer(read_only=True)
+    supplier_id = serializers.PrimaryKeyRelatedField(
+        queryset=Supplier.objects.all(), source='supplier', write_only=True
+    )
+    related_products = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), many=True, required=False
+    )
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'product_id', 'product_name', 'product_type', 'description',
+            'category', 'category_id', 'tax_code', 'tax_code_id', 'unit_price', 'discount',
+            'uom', 'uom_id', 'quantity', 'stock_level', 'reorder_level', 'warehouse',
+            'warehouse_id', 'size', 'size_id', 'color', 'color_id', 'weight',
+            'specifications', 'supplier', 'supplier_id', 'status', 'product_usage',
+            'related_products', 'sub_category', 'image'
+        ]
+
+    def create(self, validated_data):
+        related_products = validated_data.pop('related_products', [])
+        product = Product.objects.create(**validated_data)
+        product.related_products.set(related_products)
+        return product
+
+    def update(self, instance, validated_data):
+        related_products = validated_data.pop('related_products', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        if related_products is not None:
+            instance.related_products.set(related_products)
+        return instance
+    
+
+
+from rest_framework import serializers
+from .models import Customer, SalesRep
+
+class SalesRepSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SalesRep
+        fields = ['id', 'name']
+
+class CustomerSerializer(serializers.ModelSerializer):
+    assigned_sales_rep = serializers.PrimaryKeyRelatedField(
+        queryset=SalesRep.objects.all(), required=False, allow_null=True
+    )
+    assigned_sales_rep_name = serializers.CharField(
+        source='assigned_sales_rep.name', read_only=True
+    )
+    industry = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    custom_industry = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    payment_terms = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    custom_payment_terms = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    credit_term = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    custom_credit_term = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+    class Meta:
+        model = Customer
+        fields = [
+            'id', 'customer_id', 'first_name', 'last_name', 'customer_type', 'status',
+            'assigned_sales_rep', 'assigned_sales_rep_name', 'email', 'phone_number',
+            'address', 'street', 'city', 'state', 'zip_code', 'country', 'company_name',
+            'industry', 'custom_industry', 'location', 'gst_tax_id', 'credit_limit',
+            'available_limit', 'billing_address', 'shipping_address', 'payment_terms',
+            'custom_payment_terms', 'credit_term', 'custom_credit_term', 'last_edited',
+            'created_by', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['customer_id', 'available_limit', 'last_edited', 'created_by', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        customer_type = data.get('customer_type')
+        company_name = data.get('company_name')
+        location = data.get('location')
+
+        # Validate company_name and location for non-Individual types
+        if customer_type in ['Business', 'Organization']:
+            if not company_name:
+                raise serializers.ValidationError({'company_name': 'This field is required for Business/Organization types.'})
+            if not location:
+                raise serializers.ValidationError({'location': 'This field is required for Business/Organization types.'})
+
+        # Handle custom fields
+        if data.get('industry') == 'custom':
+            if not data.get('custom_industry'):
+                raise serializers.ValidationError({'custom_industry': 'This field is required when industry is "custom".'})
+            data['industry'] = data.get('custom_industry')
+        if data.get('payment_terms') == 'custom':
+            if not data.get('custom_payment_terms'):
+                raise serializers.ValidationError({'custom_payment_terms': 'This field is required when payment_terms is "custom".'})
+            data['payment_terms'] = data.get('custom_payment_terms')
+        if data.get('credit_term') == 'custom':
+            if not data.get('custom_credit_term'):
+                raise serializers.ValidationError({'custom_credit_term': 'This field is required when credit_term is "custom".'})
+            data['credit_term'] = data.get('custom_credit_term')
+
+        return data
