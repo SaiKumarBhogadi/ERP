@@ -1,0 +1,219 @@
+.create-department-role-container {
+  width: 100%;
+  height: 100%;
+  padding: 25px;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: gray transparent;
+}
+.x-logo-create-department {
+  width: 26.5px;
+  height: 26.5px;
+  padding: 5px;
+  fill: #fff;
+  background: rgba(35, 78, 112, 1);
+  border-radius: 5px;
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  cursor: pointer;
+}
+
+.create-department-head > p {
+  text-align: center;
+  color: rgba(35, 78, 112, 1);
+  font-size: 18px;
+  font-weight: 700;
+}
+.create-department-body > form {
+  margin-top: 25px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.create-department-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+}
+.create-department-box {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#create-department-box-fullwidth {
+  width: 100%;
+}
+.create-department-box > label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.create-department-box > label > sup {
+  color: red;
+}
+.create-department-box > input,
+.create-department-box > select {
+  border: 2px solid rgba(226, 226, 226, 1);
+  border-radius: 10px;
+  padding: 7px 15px;
+  min-width: 195px;
+  background: rgba(249, 249, 249, 1);
+}
+.create-department-box > input::placeholder,
+.create-department-box > select::placeholder {
+  color: hsl(0, 0%, 80%);
+}
+.create-department-box > input:focus,
+.create-department-box > select:focus {
+  border-color: rgba(35, 78, 112, 1);
+  color: rgba(1, 19, 52, 1);
+  background: rgba(255, 255, 255, 1);
+}
+
+/* display-role-cointainer */
+.display-role-cointainer {
+  width: 100%;
+  overflow-x: scroll;
+}
+.display-role-cointainer-title {
+  width: 100%;
+}
+.display-role-cointainer-title > nav {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.display-role-cointainer-title > nav > p {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(35, 78, 112, 1);
+}
+.display-role-cointainer-title > nav > button {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(35, 78, 112, 1);
+  color: #fff;
+  border: 0px;
+}
+.display-role-cointainer > table {
+  border: 2px solid rgba(0, 0, 0, 0.16);
+  border-radius: 10px;
+}
+.display-role-tablehead > tr > th {
+  padding: 10px 20px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+.display-role-tablebody > tr > td {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(42, 42, 42, 1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+#display-rolename-width {
+  width: 20%;
+  min-width: 5px;
+}
+#display-description-width {
+  width: 80%;
+  min-width: 250px;
+}
+.create-department-submit-container {
+  width: 100%;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+.create-department-cancel {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  margin-right: 20px;
+}
+.create-department-save {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+}
+
+/* action */
+
+.dot-logo-department {
+  width: 4px;
+  height: 16px;
+  fill: #2a2a2a;
+  cursor: pointer;
+}
+#display-action-width:hover > .departmentrole-dot-container {
+  display: flex;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  border-radius: 7px;
+}
+.departmentrole-dot-container {
+  display: none;
+  flex-direction: column;
+
+  background: #fff;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  position: absolute;
+  top: 25px;
+  right: 15px;
+}
+.departmentrole-dot-container > div {
+  padding: 10px 15px;
+  width: 100%;
+  border-radius: 7px;
+}
+.departmentrole-dot-container > div:hover {
+  background: lightgray;
+  cursor: pointer;
+}
+#display-action-width {
+  position: relative;
+}
+@media (max-width: 800px) {
+  .create-department-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .create-department-box {
+    width: 100%;
+  }
+  .create-department-head > p {
+    text-align: start;
+    margin-right: 40px;
+  }
+  .create-department-body {
+    gap: 15px;
+  }
+}
+@media (max-width: 465px) {
+  .create-department-cancel {
+    padding: 5px 20px;
+    margin-right: 10px;
+  }
+  .create-department-save {
+    padding: 5px 20px;
+  }
+}

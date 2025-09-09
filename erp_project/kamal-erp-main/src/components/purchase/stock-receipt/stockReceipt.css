@@ -1,0 +1,336 @@
+.stockReceipt-container {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  overflow: scroll;
+  background: rgba(253, 253, 253, 1);
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.stockReceipt-container::-webkit-scrollbar {
+  display: none;
+}
+.stockReceipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.stockReceipt-header > p {
+  font-size: 24px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+.stockReceipt-header > button {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 14px;
+  background: #234e70;
+  color: #fff;
+  border-radius: 12px;
+  border: 0px;
+  min-width: 123px;
+}
+/* search box */
+.stockReceipt-search-box {
+  cursor: pointer;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  gap: 10px;
+  border-radius: 40px;
+  width: 100%;
+  border: 2px solid rgba(217, 217, 217, 1);
+}
+.stockReceipt-search-box:focus {
+  border: 2px solid rgba(35, 78, 112, 1);
+}
+.stockReceipt-search-box > label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.stockReceipt-search-logo {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  fill: rgba(192, 192, 192, 1);
+}
+.stockReceipt-search-box > input {
+  width: 95%;
+  border: 0px;
+  background: transparent;
+}
+.stockReceipt-search-box > input:focus {
+  outline: none;
+}
+.stockReceipt-search-box > input::placeholder {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(176, 176, 176, 1);
+}
+.stockReceipt-clearfilter {
+  margin-top: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+.stockReceipt-clearfilter > p {
+  width: max-content;
+  cursor: pointer;
+}
+.stockReceipt-search-category {
+  width: 100%;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+.stockReceipt-input-box {
+  flex: 1;
+  display: flex;
+  gap: 3px;
+  flex-direction: column;
+  min-width: 185px;
+}
+.stockReceipt-input-box > label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(42, 42, 42, 1);
+}
+.stockReceipt-input-box > input,
+.stockReceipt-input-box > select,
+.stockReceipt-input-box > nav {
+  border: 2px solid rgba(35, 78, 112, 1);
+  border-radius: 10px;
+  color: rgba(1, 19, 52, 1);
+  font-size: 14px;
+  font-weight: 400;
+  background: rgba(255, 255, 255, 1);
+  padding: 7px 15px;
+  cursor: pointer;
+}
+.stockReceipt-input-box > nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.stockReceipt-input-box > nav > div {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+}
+.stockReceipt-input-box > nav > div > span {
+  color: rgba(176, 176, 176, 1);
+  font-size: 14px;
+  font-weight: 400;
+  width: 36px;
+}
+.stockReceipt-date {
+  flex: 1;
+  border: none;
+  color: rgba(1, 19, 52, 1);
+  cursor: pointer;
+}
+.stockReceipt-date:focus {
+  outline: none;
+}
+/* button */
+.stockReceipt-active-btn {
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+  width: max-content;
+  cursor: pointer;
+}
+.stockReceipt-inactive-btn {
+  border: 2px solid rgba(176, 176, 176, 1);
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(176, 176, 176, 1);
+  border-radius: 12px;
+  background-color: white;
+  width: max-content;
+  cursor: pointer;
+}
+/* table */
+.stockReceipt-table-cointainer {
+  width: 100%;
+  overflow-y: hidden;
+  overflow-x: scroll;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  scrollbar-color: lightgray;
+}
+.stockReceipt-table-cointainer > table {
+  width: 100%;
+  border: 1px solid hsla(0, 0%, 0%, 0.119);
+  background: #fff;
+  margin-top: 45px;
+  border-radius: 4px;
+}
+.stockReceipt-delete-logo {
+  width: 20px;
+  height: 20px;
+  fill: black;
+  margin: auto;
+  cursor: pointer;
+}
+.stockReceipt-table-head > tr > th {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 20px;
+  border-bottom: 1px solid black;
+  text-align: start;
+}
+.stockReceipt-table-body > tr > td {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(26, 26, 26, 1);
+  padding: 15px 20px;
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+  text-align: start;
+  width: fit-content;
+}
+
+.stockReceipt-table-check {
+  width: 18px;
+  height: 18px;
+  color: rgba(42, 42, 42, 1);
+}
+/* action */
+#stockReceipt-table-action {
+  position: relative;
+}
+#stockReceipt-table-action:hover > .stockReceipt-dot-container {
+  display: flex;
+  flex-direction: column;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  border-radius: 7px;
+}
+.stockReceipt-dot-container {
+  display: none;
+  background: #fff;
+  align-items: center;
+  z-index: 7;
+  position: absolute;
+  top: -57px;
+  right: 10px;
+  width: max-content;
+  align-items: start;
+}
+.stockReceipt-dot-container > button {
+  padding: 10px 15px;
+  border-radius: 3px;
+  width: 100%;
+  background: white;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: start;
+}
+.stockReceipt-dot-container button:hover {
+  background: lightgray;
+  cursor: pointer;
+}
+/* status */
+.stockReceipt-Status {
+  padding: 8px;
+  text-align: center;
+  border-radius: 10px;
+  width: max-content;
+}
+.stockReceipt-Status-draft {
+  background-color: rgba(255, 214, 56, 1);
+}
+.stockReceipt-Status-Submitted {
+  background-color: rgba(140, 216, 188, 1);
+}
+.stockReceipt-Status-Cancelled {
+  background-color: rgba(255, 77, 79, 1);
+}
+
+.stockReceipt-Status-Returned {
+  background-color: rgba(189, 226, 255, 1);
+}
+/* table bottem */
+
+.stockReceipt-table-bottem {
+  width: 100%;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: hsl(0, 0%, 95%);
+  border-top: 0px !important;
+  border: 1px solid hsla(0, 0%, 0%, 0.119);
+}
+.stockReceipt-num-entries {
+  font-size: 14px;
+  font-weight: 400;
+  color: #2a2a2a;
+}
+.stockReceipt-manage-control-box {
+  width: 190px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: row;
+}
+.stockReceipt-manage-btn {
+  padding: 8px 10px;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  cursor: pointer;
+}
+.stockReceipt-manage-btn:hover {
+  transform: scale(1.035);
+}
+.stockReceipt-num-page {
+  font-size: 14px;
+  font-weight: 400;
+  color: #2a2a2a;
+}
+
+@media (max-width: 1120px) {
+  .stockReceipt-table-title > nav {
+    width: 100%;
+    justify-content: end;
+  }
+}
+@media (max-width: 430px) {
+  .stockReceipt-table-bottem {
+    flex-direction: column;
+    padding: 20px 10px;
+  }
+  .stockReceipt-num-entries {
+    width: 100%;
+  }
+  .stockReceipt-manage-control-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

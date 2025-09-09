@@ -1,0 +1,636 @@
+.createNewInvoice-container {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  overflow: scroll;
+  background: rgba(253, 253, 253, 1);
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.createNewInvoice-container::-webkit-scrollbar {
+  display: none;
+}
+/* head */
+.createNewInvoice-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+.createNewInvoice-head > nav {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  width: max-content;
+}
+.createNewInvoice-head > div {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap-reverse;
+  width: max-content;
+}
+.createNewInvoice-head > nav > p {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(35, 78, 112, 1);
+}
+.createNewInvoice-head > nav > h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(26, 26, 26, 1);
+  padding: 6px 9px;
+  border-radius: 8px;
+}
+.createNewInvoice-Status-draft {
+  background-color: rgba(250, 204, 21, 1);
+}
+.createNewInvoice-Status-Send {
+  background-color: rgba(140, 216, 188, 1);
+}
+.createNewInvoice-Status-Paid {
+  background-color: rgba(34, 197, 94, 1);
+}
+.createNewInvoice-Status-Cancelled {
+  background-color: rgba(255, 77, 79, 1);
+}
+.createNewInvoice-Status-empty {
+  background-color: rgba(229, 231, 235, 1);
+}
+.createNewInvoice-close {
+  cursor: pointer;
+  display: flex;
+  gap: 5px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.createNewInvoice-circle-x-logo {
+  width: 15px;
+  height: 15px;
+  fill: rgba(255, 77, 79, 1);
+}
+.createNewInvoice-close > p {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 77, 79, 1);
+}
+
+/* createNewInvoice-input-container */
+.createNewInvoice-input-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-direction: row;
+  padding: 8px 0;
+}
+.createNewInvoice-input-box {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 3px;
+}
+
+.createNewInvoice-input-box > label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(42, 42, 42, 1);
+}
+.createNewInvoice-input-box > label > sup {
+  color: red;
+}
+.createNewInvoice-subtit > sup {
+  color: red;
+}
+.createNewInvoice-subtit {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 0 10px 0;
+}
+
+.createNewInvoice-input-box > input,
+.createNewInvoice-input-box > select {
+  border: 2px solid rgba(226, 226, 226, 1);
+  background-color: rgba(249, 249, 249, 1);
+  width: 100%;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 8px 18px;
+}
+.createNewInvoice-input-box > input:focus,
+.createNewInvoice-input-box > select:focus {
+  border: 2px solid rgba(35, 78, 112, 1);
+  background-color: #fff;
+  color: rgba(1, 19, 52, 1);
+}
+.createNewInvoice-input-box > input::placeholder,
+.createNewInvoice-input-box > select::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+
+/* check box input */
+.createNewInvoice-input-checkbox {
+  width: 100%;
+  font-family: sans-serif;
+
+  position: relative;
+}
+
+.createNewInvoice-input-checkbox > label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(42, 42, 42, 1);
+}
+
+.createNewInvoice-dropdown-wrapper {
+  position: relative;
+}
+
+.createNewInvoice-dropdown-header {
+  padding: 10px;
+  border: 2px solid rgba(226, 226, 226, 1);
+  background-color: rgba(249, 249, 249, 1);
+  width: 100%;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 8px 3px 8px 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  transition: border-color 0.3s ease;
+}
+
+.createNewInvoice-down-arrow {
+  width: 10.9px;
+  height: 16px;
+}
+
+.createNewInvoice-dropdown-body {
+  position: absolute;
+  width: 100%;
+  max-height: 180px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.createNewInvoice-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.createNewInvoice-dropdown-item input {
+  margin-right: 8px;
+}
+
+.createNewInvoice-dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+/* table */
+.createNewInvoice-table-container {
+  width: 100%;
+  overflow-y: hidden;
+  overflow-x: scroll;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  scrollbar-color: lightgray;
+  margin-bottom: 50px;
+}
+.createNewInvoice-table-container > table {
+  width: 100%;
+  border: 1px solid hsla(0, 0%, 0%, 0.119);
+  background: #fff;
+  border-radius: 4px;
+}
+.createNewInvoice-table-head > tr > th {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 20px;
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+  text-align: start;
+}
+.createNewInvoice-table-body > tr {
+  background: rgba(253, 253, 253, 1);
+}
+.createNewInvoice-table-body > tr > td {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(26, 26, 26, 1);
+  padding: 15px 20px;
+  background: rgba(253, 253, 253, 1);
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+  text-align: start;
+}
+/* Order Summary */
+/* createNewInvoice-totals-container */
+.createNewInvoice-totals-container {
+  width: 100%;
+  border: 1px solid rgba(35, 78, 112, 0.12);
+  border-radius: 4px;
+}
+.createNewInvoice-totals-container > nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 28px;
+  border: 1px solid rgba(35, 78, 112, 0.12);
+}
+.createNewInvoice-totals-container-bg {
+  background-color: rgba(35, 78, 112, 0.05);
+}
+.createNewInvoice-totals-container > nav > h5,
+.createNewInvoice-totals-container > nav > p {
+  color: rgba(26, 26, 26, 1);
+  font-size: 16px;
+  font-weight: 400;
+}
+.createNewInvoice-totals-container > nav > input {
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 2px solid rgba(224, 228, 231, 1);
+  background: rgba(253, 253, 253, 1);
+}
+/* hub-container */
+
+.createNewInvoice-hub-container {
+  width: 100%;
+  border: 2px solid rgba(35, 78, 112, 0.12);
+  border-radius: 4px;
+  margin-top: 50px;
+}
+.createNewInvoice-hub-head {
+  width: 100%;
+  background-color: rgba(35, 78, 112, 0.05);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 25px;
+}
+.createNewInvoice-hub-head-tit {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+.createNewInvoice-hub-head-bg-black {
+  color: black;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+}
+.createNewInvoice-hub-body {
+  width: 100%;
+}
+/* comment */
+.createNewInvoice-comment-container,
+.createNewInvoice-attachment-container {
+  padding: 20px;
+  width: 100%;
+}
+.createNewInvoice-comment-container > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+  padding-bottom: 15px;
+}
+.createNewInvoice-comment-container > form {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  gap: 15px;
+}
+.createNewInvoice-comment-container > form > input {
+  border-radius: 10px;
+  background-color: rgba(244, 244, 244, 1);
+  padding: 8px 18px;
+  color: rgba(26, 26, 26, 1);
+  border: 0px;
+  font-size: 14px;
+  font-weight: 400;
+  width: 100%;
+}
+.createNewInvoice-comment-container > form > input::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+.createNewInvoice-comment-container > form > input:focus {
+  outline: none;
+}
+.createNewInvoice-comment-container > form > button {
+  color: #fff;
+  background-color: rgba(35, 78, 112, 1);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 6px 14px;
+  border: none;
+}
+.createNewInvoice-comment-brline {
+  margin: 15px 0;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(224, 228, 231, 1);
+}
+.createNewInvoice-showarea {
+  width: 100%;
+}
+.createNewInvoice-message-container {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: start;
+  gap: 20px;
+  margin: 30px 5px;
+}
+.createNewInvoice-comment-profile-logo,
+.createNewInvoice-history-profile-logo,
+.createNewInvoice-status-logo {
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+}
+.createNewInvoice-history-mail-logo {
+  min-width: 20px !important;
+  min-height: 16px !important;
+  max-width: 20px !important;
+  max-height: 16px !important;
+}
+.createNewInvoice-message-box {
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.createNewInvoice-message-box > p {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+.createNewInvoice-message-box > nav {
+  color: rgba(26, 26, 26, 1);
+  font-size: 14px;
+  font-weight: 400;
+}
+/* history */
+.createNewInvoice-history-container {
+  padding: 0 20px;
+  width: 100%;
+}
+.createNewInvoice-statusChange-container {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  padding: 20px 0;
+  gap: 20px;
+}
+.createNewInvoice-statusChange-container:first-child {
+  border-bottom: 3px dotted rgba(224, 228, 231, 1);
+}
+.createNewInvoice-status-head {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+}
+.createNewInvoice-status-head > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+}
+.createNewInvoice-status-detailes {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  gap: 13px;
+}
+.createNewInvoice-status-detailes > nav {
+  display: flex;
+  justify-items: start;
+  align-items: center;
+  gap: 10px;
+}
+.createNewInvoice-status-detailes > nav > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.createNewInvoice-status-detailes > nav > p > span {
+  color: rgba(35, 78, 112, 1);
+}
+/* attachment */
+.createNewInvoice-upload-btn {
+  border: 2px solid rgba(35, 78, 112, 1);
+  border-radius: 12px;
+  background-color: rgba(249, 249, 249, 1);
+  font-size: 16px;
+  font-weight: 500;
+  color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  cursor: pointer;
+  padding: 8px 14px;
+  margin-bottom: 5px;
+}
+.createNewInvoice-upload-btn > nav {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.createNewInvoice-attached-files {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 15px 0;
+}
+.createNewInvoice-attached-files > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.createNewInvoice-file-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.createNewInvoice-file-item > nav {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+}
+.createNewInvoice-file-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: start;
+  align-items: center;
+}
+.createNewInvoice-file-actions > a {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(35, 78, 112, 1);
+  text-decoration: none;
+}
+.createNewInvoice-file-actions > button {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 77, 79, 1);
+  color: rgba(255, 77, 79, 1);
+  font-size: 14px;
+  font-weight: 500;
+  background: #fff;
+  margin-right: 20px;
+}
+/* button container */
+.createNewInvoice-btn-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 50px 0;
+  flex-wrap: wrap-reverse;
+}
+.createNewInvoice-btn-container > nav {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+/* button state */
+.createNewInvoice-active-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+  width: max-content;
+  cursor: pointer;
+}
+.createNewInvoice-inactive-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(176, 176, 176, 1);
+  color: rgba(176, 176, 176, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.createNewInvoice-completed-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 0.5);
+  color: rgba(255, 255, 255, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 0.5);
+  width: max-content;
+  cursor: pointer;
+}
+.createNewInvoice-cancel-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.createNewInvoice-order-active-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 77, 79, 1);
+  color: rgba(255, 77, 79, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.createNewInvoice-pdf-mail-activelogo {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 10px;
+  background: rgba(35, 78, 112, 1);
+  fill: white;
+  border: 2px solid rgba(35, 78, 112, 1);
+}
+.createNewInvoice-pdf-mail-futurelogo {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 10px;
+  background: white;
+  fill: rgba(176, 176, 176, 1);
+  border: 2px solid rgba(176, 176, 176, 1);
+}
+@media (max-width: 500px) {
+  .createNewInvoice-totals-container > nav {
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    gap: 3px;
+  }
+  .createNewInvoice-totals-container > nav > input {
+    width: 100%;
+  }
+  .createNewInvoice-hub-head {
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+  }
+}
+@media (max-width: 600px) {
+  .createNewInvoice-input-container {
+    flex-direction: column;
+  }
+}

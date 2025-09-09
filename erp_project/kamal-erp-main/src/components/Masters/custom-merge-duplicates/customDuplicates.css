@@ -1,0 +1,161 @@
+.customDuplicate-container {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  overflow: scroll;
+  background: rgba(253, 253, 253, 1);
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.customDuplicate-container::-webkit-scrollbar {
+  display: none;
+}
+.customDuplicate-title {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+.customDuplicate-title > p {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(35, 78, 112, 1);
+}
+.customDuplicate-title > nav {
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  align-items: center;
+  gap: 5px;
+  flex-direction: row;
+}
+.customDuplicate-title > nav > p {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 77, 79, 1);
+}
+.customDuplicate-circle-x-logo {
+  width: 15px;
+  height: 15px;
+  fill: rgba(255, 77, 79, 1);
+}
+.customDuplicate-table-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+
+/* table */
+.customDuplicate-list-container {
+  overflow-x: scroll;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: lightgray transparent;
+  margin: 30px 0;
+}
+.customDuplicate-list-container > table {
+  width: 100%;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 0px 4px;
+  border-radius: 4px;
+}
+.customDuplicate-table-head > tr > th {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 20px;
+  background-color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.customDuplicate-table-body > tr > td {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(26, 26, 26, 1);
+  padding: 15px 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.customDuplicate-table-head > tr > th > input,
+.customDuplicate-table-body > tr > td > input {
+  height: 18px;
+  width: 18px;
+  color: rgba(42, 42, 42, 1);
+}
+.customDuplicate-table-body > tr:nth-child(even) {
+  background-color: #fff;
+}
+
+.customDuplicate-table-body > tr:nth-child(odd) {
+  background-color: rgba(35, 78, 112, 0.05);
+}
+#customDuplicate-review {
+  color: rgba(35, 78, 112, 0.8);
+  font-weight: 500;
+}
+#customDuplicate-th-td-width {
+  min-width: 200px;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.customDuplicate-instruction {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.customDuplicate-instruction > h5 {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(176, 176, 176, 1);
+}
+.customDuplicate-instruction > p {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(42, 42, 42, 1);
+}
+.customDuplicate-tickbox-logo {
+  fill: rgba(0, 184, 0, 1);
+  width: 18px !important;
+  height: 18px !important;
+}
+.customDuplicate-alert-red-logo {
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  fill: red;
+}
+.customDuplicate-submut-container {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 15px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+.customDuplicate-submut-container > nav {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+}
+.customDuplicate-submut-container > button {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+}

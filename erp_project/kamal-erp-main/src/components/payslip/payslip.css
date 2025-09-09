@@ -1,0 +1,124 @@
+.payslip {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  background: hsl(240, 33%, 97%);
+  position: relative;
+  border-radius: 5px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.payslip:hover {
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.payslip > h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: hsl(226, 36%, 35%);
+  text-transform: uppercase;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.select-Y-M-cointainer div {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2b3a67;
+  padding-bottom: 10px;
+  padding: 20px 0 10px 0;
+}
+.search-Y-M {
+  display: flex;
+  align-items: center;
+}
+.Y-M {
+  width: 300px;
+  height: 30px;
+  padding: 7px;
+  cursor: pointer;
+  border-radius: 7px;
+  background: #fff;
+  border: 0px;
+}
+.Y-M:focus {
+  outline: 2px solid hsl(226, 36%, 39%);
+}
+.payslip > nav {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin-top: 15px;
+}
+.payslip > nav > .num-of-task {
+  width: 60%;
+  min-width: 350px;
+}
+.payslip > nav > h2 {
+  color: #2b3a67;
+}
+
+.payslip-month-title {
+  min-width: 120px;
+  max-width: 140px;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.payslip-title {
+  min-width: 150px;
+  max-width: 150px;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.payslip-buttons {
+  display: flex;
+  gap: 10px;
+  min-width: 150px;
+  max-width: 150px;
+  height: max-content;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 400;
+}
+.view-payslip,
+.download-payslip {
+  padding: 8px 10px;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  cursor: pointer;
+}
+.view-payslip:hover,
+.download-payslip:hover {
+  background-image: linear-gradient(#405189, #0056b3);
+  transform: scale(1.05);
+}
+.payslip-color {
+  font-size: 16px;
+  font-weight: 500;
+  color: #41528a;
+  min-width: 120px;
+  max-width: 120px;
+  height: max-content;
+  padding: 10px;
+}
+@media (max-width: 375px) {
+  .payslip > nav > .num-of-task {
+    min-width: 310px;
+  }
+  .payslip-color,
+  .payslip-month-title {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+  .payslip-buttons,
+  .payslip-title {
+    padding-left: 0px;
+  }
+}

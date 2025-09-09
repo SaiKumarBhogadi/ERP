@@ -1,0 +1,606 @@
+.cerateNewStock-container {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  overflow: scroll;
+  background: rgba(253, 253, 253, 1);
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.cerateNewStock-container::-webkit-scrollbar {
+  display: none;
+}
+/* status */
+.cerateNewStock-Status-draft {
+  background-color: rgba(250, 204, 21, 1);
+}
+.cerateNewStock-Status-Submitted {
+  background-color: rgba(140, 216, 188, 1);
+}
+.cerateNewStock-Status-Cancelled {
+  background-color: rgba(255, 77, 79, 1);
+}
+.cerateNewStock-Status-Returned {
+  background-color: rgba(189, 226, 255, 1);
+}
+/* button state */
+.cerateNewStock-active-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+  width: max-content;
+  cursor: pointer;
+}
+.cerateNewStock-inactive-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(176, 176, 176, 1);
+  color: rgba(176, 176, 176, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.cerateNewStock-completed-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 0.5);
+  color: rgba(255, 255, 255, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 0.5);
+  width: max-content;
+  cursor: pointer;
+}
+.cerateNewStock-cancel-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.cerateNewStock-order-active-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 77, 79, 1);
+  color: rgba(255, 77, 79, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.cerateNewStock-pdf-mail-activelogo {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 10px;
+  background: rgba(35, 78, 112, 1);
+  fill: white;
+  border: 2px solid rgba(35, 78, 112, 1);
+}
+.cerateNewStock-pdf-mail-futurelogo {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 10px;
+  background: white;
+  fill: rgba(176, 176, 176, 1);
+  border: 2px solid rgba(176, 176, 176, 1);
+}
+/* head */
+.cerateNewStock-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+.cerateNewStock-head > nav {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  width: max-content;
+}
+.cerateNewStock-head > div {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap-reverse;
+  width: max-content;
+}
+.cerateNewStock-head > nav > p {
+  font-size: 22px;
+  font-weight: 600;
+  color: rgba(35, 78, 112, 1);
+}
+.cerateNewStock-head > nav > h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(26, 26, 26, 1);
+  padding: 6px 9px;
+  border-radius: 8px;
+}
+.cerateNewStock-close {
+  cursor: pointer;
+  display: flex;
+  gap: 5px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.cerateNewStock-circle-x-logo {
+  width: 15px;
+  height: 15px;
+  fill: rgba(255, 77, 79, 1);
+}
+.cerateNewStock-close > p {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 77, 79, 1);
+}
+
+/*input-container */
+.cerateNewStock-input-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-direction: row;
+  padding: 8px 0;
+}
+.cerateNewStock-input-box {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 3px;
+}
+
+.cerateNewStock-input-box > label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(42, 42, 42, 1);
+}
+.cerateNewStock-input-box > label > sup {
+  color: red;
+}
+.cerateNewStock-subtit > sup {
+  color: red;
+}
+.cerateNewStock-subtit {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 0 10px 0;
+}
+
+.cerateNewStock-input-box > input,
+.cerateNewStock-input-box > select {
+  border: 2px solid rgba(226, 226, 226, 1);
+  background-color: rgba(249, 249, 249, 1);
+  width: 100%;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 8px 18px;
+}
+.cerateNewStock-input-box > input:focus,
+.cerateNewStock-input-box > select:focus {
+  border: 2px solid rgba(35, 78, 112, 1);
+  background-color: #fff;
+  color: rgba(1, 19, 52, 1);
+}
+.cerateNewStock-input-box > input::placeholder,
+.cerateNewStock-input-box > select::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+
+/* table */
+.cerateNewStock-table-delete-logo {
+  width: 14px;
+  height: 16px;
+  fill: #234e70;
+  margin: auto;
+  cursor: pointer;
+}
+.cerateNewStock-table-delete-logo.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.cerateNewStock-table-container {
+  width: 100%;
+  overflow-y: hidden;
+  overflow-x: scroll;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  scrollbar-color: lightgray;
+  margin-bottom: 50px;
+}
+.cerateNewStock-table-container > table {
+  width: 100%;
+  border: 1px solid hsla(0, 0%, 0%, 0.119);
+  background: #fff;
+  border-radius: 4px;
+}
+.cerateNewStock-table-head > tr > th {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+  padding: 15px 20px;
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+}
+.cerateNewStock-table-body > tr {
+  background: rgba(253, 253, 253, 1);
+}
+.cerateNewStock-table-body > tr > td {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(26, 26, 26, 1);
+  padding: 15px 20px;
+  background: rgba(253, 253, 253, 1);
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+  text-align: start;
+}
+.cerateNewStock-table-body > tr > td > select,
+.cerateNewStock-table-body > tr > td > button,
+.cerateNewStock-table-body > tr > td > input {
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 2px solid rgba(224, 228, 231, 1);
+  background: rgba(253, 253, 253, 1);
+  cursor: pointer;
+}
+
+/* hub-container */
+
+.cerateNewStock-hub-container {
+  width: 100%;
+  border: 2px solid rgba(35, 78, 112, 0.12);
+  border-radius: 4px;
+  margin-top: 50px;
+}
+.cerateNewStock-hub-head {
+  width: 100%;
+  background-color: rgba(35, 78, 112, 0.05);
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 25px;
+}
+.cerateNewStock-hub-head-tit {
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+.cerateNewStock-hub-head-bg-black {
+  color: black;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+}
+.cerateNewStock-hub-body {
+  width: 100%;
+}
+/* comment */
+.cerateNewStock-comment-container,
+.cerateNewStock-attachment-container {
+  padding: 20px;
+  width: 100%;
+}
+.cerateNewStock-comment-container > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+  padding-bottom: 15px;
+}
+.cerateNewStock-comment-container > form {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  gap: 15px;
+}
+.cerateNewStock-comment-container > form > input {
+  border-radius: 10px;
+  background-color: rgba(244, 244, 244, 1);
+  padding: 8px 18px;
+  color: rgba(26, 26, 26, 1);
+  border: 0px;
+  font-size: 14px;
+  font-weight: 400;
+  width: 100%;
+}
+.cerateNewStock-comment-container > form > input::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+.cerateNewStock-comment-container > form > input:focus {
+  outline: none;
+}
+.cerateNewStock-comment-container > form > button {
+  color: #fff;
+  background-color: rgba(35, 78, 112, 1);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 6px 14px;
+  border: none;
+}
+.cerateNewStock-comment-brline {
+  margin: 15px 0;
+  width: 100%;
+  height: 1px;
+  background-color: rgba(224, 228, 231, 1);
+}
+.cerateNewStock-showarea {
+  width: 100%;
+}
+.cerateNewStock-message-container {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  align-items: start;
+  gap: 20px;
+  margin: 30px 5px;
+}
+.cerateNewStock-comment-profile-logo,
+.cerateNewStock-history-profile-logo,
+.cerateNewStock-status-logo {
+  min-width: 24px !important;
+  min-height: 24px !important;
+  max-width: 24px !important;
+  max-height: 24px !important;
+}
+.cerateNewStock-history-mail-logo {
+  min-width: 20px !important;
+  min-height: 16px !important;
+  max-width: 20px !important;
+  max-height: 16px !important;
+}
+.cerateNewStock-message-box {
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cerateNewStock-message-box > p {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(35, 78, 112, 1);
+}
+.cerateNewStock-message-box > nav {
+  color: rgba(26, 26, 26, 1);
+  font-size: 14px;
+  font-weight: 400;
+}
+/* history */
+.cerateNewStock-history-container {
+  padding: 0 20px;
+  width: 100%;
+}
+.cerateNewStock-statusChange-container {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  padding: 20px 0;
+  gap: 20px;
+}
+.cerateNewStock-statusChange-container:first-child {
+  border-bottom: 3px dotted rgba(224, 228, 231, 1);
+}
+.cerateNewStock-status-head {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+}
+.cerateNewStock-status-head > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+}
+.cerateNewStock-status-detailes {
+  display: flex;
+  justify-content: center;
+  align-items: start;
+  flex-direction: column;
+  gap: 13px;
+}
+.cerateNewStock-status-detailes > nav {
+  display: flex;
+  justify-items: start;
+  align-items: center;
+  gap: 10px;
+}
+.cerateNewStock-status-detailes > nav > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.cerateNewStock-status-detailes > nav > p > span {
+  color: rgba(35, 78, 112, 1);
+}
+/* attachment */
+.cerateNewStock-upload-btn {
+  border: 2px solid rgba(35, 78, 112, 1);
+  border-radius: 12px;
+  background-color: rgba(249, 249, 249, 1);
+  font-size: 16px;
+  font-weight: 500;
+  color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  cursor: pointer;
+  padding: 8px 14px;
+  margin-bottom: 5px;
+}
+.cerateNewStock-upload-btn > nav {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.cerateNewStock-attached-files {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 15px 0;
+}
+.cerateNewStock-attached-files > p {
+  font-size: 14px;
+  font-weight: 500;
+  color: black;
+}
+.cerateNewStock-file-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  align-items: start;
+  margin-bottom: 10px;
+}
+.cerateNewStock-file-item > nav {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(26, 26, 26, 1);
+}
+.cerateNewStock-file-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: start;
+  align-items: center;
+}
+.cerateNewStock-file-actions > a {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(35, 78, 112, 1);
+  text-decoration: none;
+}
+.cerateNewStock-file-actions > button {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 77, 79, 1);
+  color: rgba(255, 77, 79, 1);
+  font-size: 14px;
+  font-weight: 500;
+  background: #fff;
+  margin-right: 20px;
+}
+/* button container */
+.cerateNewStock-btn-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 50px 0;
+  flex-wrap: wrap-reverse;
+}
+.cerateNewStock-btn-container > nav {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+/* stock dim */
+.cerateNewStock-stockDim-blue {
+  color: rgba(0, 110, 198, 1) !important;
+  cursor: pointer;
+  width: max-content;
+}
+
+/* cerateNewStock-btn */
+
+.cerateNewStock-btn {
+  position: fixed;
+  top: 55%;
+  left: 60%;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+  width: 65%;
+  height: 78%;
+  background: #fff;
+  border: 2px solid rgba(35, 78, 112, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(171, 178, 187, 0.3);
+}
+.cerateNewStock-blur {
+  filter: blur(3px);
+  pointer-events: none;
+}
+@media (max-width: 1050px) {
+  .cerateNewStock-btn {
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 75%;
+  }
+}
+@media (max-width: 500px) {
+  .cerateNewStock-totals-container > nav {
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    gap: 3px;
+  }
+  .cerateNewStock-totals-container > nav > input {
+    width: 100%;
+  }
+  .cerateNewStock-hub-head {
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+  }
+}
+@media (max-width: 600px) {
+  .cerateNewStock-input-container {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 650px) {
+  .cerateNewStock-btn-container {
+    justify-content: end;
+  }
+}
+@media (max-width: 430px) {
+  .cerateNewStock-btn {
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 75%;
+  }
+}

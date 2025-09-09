@@ -1,0 +1,129 @@
+.addTask-container {
+  width: 100vw;
+  min-height: 100vh;
+  height: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.addtask-layout > svg {
+  max-width: 20px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  fill: #41528a;
+}
+.addtask-layout {
+  width: 50%;
+  height: auto;
+  min-width: 280px;
+  background-color: #fff;
+  padding: 40px;
+  position: fixed;
+  left: 50%;
+  bottom: -100%;
+  transform: translate(-50%, 0);
+  animation: addtask 0.5s ease-out forwards;
+}
+@keyframes addtask {
+  from {
+    bottom: -100%;
+    opacity: 0;
+  }
+  to {
+    bottom: 30%;
+    opacity: 1;
+  }
+}
+
+.addtask-form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  row-gap: 20px;
+  column-gap: 30px;
+}
+.addtask-form > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.addtask-form > div > input,
+.addtask-form > div > select {
+  flex: 1;
+  padding: 5px;
+  border: 2px solid black;
+  border-radius: 5px;
+}
+.addtask-form > div > input:focus,
+.addtask-form > div > select:focus {
+  outline: #41528a 2px solid;
+}
+
+.addtask-form > div > nav {
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.addtask-layout > div {
+  width: 100%;
+  text-align: center;
+}
+.addtask-layout > div > button {
+  padding: 10px 20px;
+  margin-top: 20px;
+  min-width: 150px;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: 2px solid hsl(0, 0%, 50%);
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+}
+.addtask-layout > div > button:hover {
+  background-image: linear-gradient(#405189, #0056b3);
+}
+
+@media (max-width: 1215px) {
+  @keyframes addtask {
+    from {
+      bottom: -100%;
+      opacity: 0;
+    }
+    to {
+      bottom: 20%;
+      opacity: 1;
+    }
+  }
+}
+@media (max-width: 900px) {
+  @keyframes addtask {
+    from {
+      bottom: -100%;
+      opacity: 0;
+    }
+    to {
+      bottom: 10%;
+      opacity: 1;
+    }
+  }
+}
+@media (max-width: 735px) {
+  @keyframes addtask {
+    from {
+      bottom: -100%;
+      opacity: 0;
+    }
+    to {
+      bottom: 2%;
+      opacity: 1;
+    }
+  }
+}

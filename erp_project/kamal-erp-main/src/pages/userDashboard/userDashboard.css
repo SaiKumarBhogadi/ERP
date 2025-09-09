@@ -1,0 +1,18 @@
+.userDashboard {
+  display: flex;
+  flex-direction: row;
+}
+
+@media (max-width: 1050px) {
+  .userDashboard > div:first-child {
+    display: none;
+  }
+
+  .right-arrow {
+    display: none;
+  }
+
+  .toggler {
+    display: block;
+  }
+}

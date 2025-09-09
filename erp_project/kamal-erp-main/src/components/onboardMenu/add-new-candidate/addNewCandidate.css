@@ -1,0 +1,293 @@
+/* Main Container */
+.Add-New-Candidate {
+  background: hsl(220, 60%, 98%);
+  padding: 15px;
+  width: 100vw;
+  height: 100vh;
+  font-family: "Poppins", sans-serif;
+  overflow-y: auto;
+}
+
+/* Header */
+.addcandidate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 15px;
+}
+.addcandidate-head h1 {
+  font-size: 24px;
+  font-weight: bold;
+  color: hsl(220, 40%, 30%);
+}
+
+.x-mark-logo {
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  fill: blue;
+  transition-duration: 0.01s;
+  transition: transform 0.3s ease-in-out;
+}
+.x-mark-logo:hover {
+  transform: rotate(180deg);
+  fill: red;
+}
+
+/* Form Sections */
+.general-container {
+  width: 100%;
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.5s ease-in-out;
+}
+.general-container h2 {
+  font-size: 20px;
+  font-weight: bold;
+  color: hsl(220, 40%, 40%);
+  margin-bottom: 15px;
+}
+
+/* Flexbox Layout */
+.general {
+  display: flex;
+  gap: 50px;
+  flex-wrap: wrap;
+}
+.general-left,
+.general-right {
+  flex: 1;
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Input Boxes */
+.candidate-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+.candidate-box > label {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+  color: hsl(220, 40%, 30%);
+}
+.candidate-input {
+  flex: 2;
+  padding: 8px;
+  font-size: 14px;
+  border: 2px solid hsl(220, 20%, 75%);
+  border-radius: 6px;
+  transition: all 0.3s ease-in-out;
+}
+.candidate-input:focus {
+  border-color: hsl(220, 50%, 50%);
+  box-shadow: 0px 0px 8px rgba(0, 100, 255, 0.3);
+}
+
+/* Remove Number Input Arrows */
+.increment-decrement,
+.salary-input {
+  appearance: none; /* Removes default UI in all browsers */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Hide number input arrows in Edge, Firefox, and WebKit browsers */
+.increment-decrement::-webkit-outer-spin-button,
+.increment-decrement::-webkit-inner-spin-button,
+.salary-input::-webkit-outer-spin-button,
+.salary-input::-webkit-inner-spin-button {
+  display: none;
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.salary-input[type="text"]::-ms-clear,
+.increment-decrement[type="text"]::-ms-clear {
+  display: none; /* Hide clear button in Edge */
+}
+
+.experience-dropdowns {
+  display: flex;
+  gap: 10px; /* Space between Year & Month dropdowns */
+}
+
+/* Textarea */
+#currentAddress {
+  min-height: 100px;
+  resize: none;
+}
+
+/* Submit Button */
+.candidate-submit-container {
+  width: 100%;
+  display: flex;
+  justify-content: end;
+}
+.candidate-submit-btn[type="submit"] {
+  padding: 10px 20px;
+  margin: 20px 0;
+  margin-right: 20px;
+  width: max-content;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  text-align: center;
+}
+.candidate-submit-btn[type="submit"]:hover {
+  background: linear-gradient(to right, #0056b3, #003580);
+  transform: scale(1.05);
+}
+.rupee-symbol {
+  padding-top: 5px;
+  text-align: center;
+}
+.rupees-logo {
+  width: 15px;
+  height: 15px;
+  fill: blue;
+}
+.salary-container {
+  display: flex;
+  justify-content: space-between;
+  flex: 2;
+  padding: 8px;
+  font-size: 14px;
+  border: 2px solid hsl(220, 20%, 75%);
+  border-radius: 6px;
+  transition: all 0.3s ease-in-out;
+}
+.salary-input {
+  outline: none;
+  flex: 1;
+  border: transparent;
+}
+
+/* uploda  file */
+/* Container Styling */
+
+/* File Input Container */
+.uploadfile {
+  font-size: 14px;
+  width: 120px;
+  background: #f9f9f9;
+  border: 2px dashed #007bff;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+/* Hover Effect */
+.uploadfile:hover {
+  background: rgba(0, 123, 255, 0.1);
+  border-color: #0056b3;
+}
+
+/* When Focused */
+.uploadfile:focus {
+  border-color: #28a745;
+  background: #e9f7ef;
+}
+
+/* Selected File Text */
+.uploadfile::file-selector-button {
+  background: #007bff;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+/* File Button Hover */
+.uploadfile::file-selector-button:hover {
+  background: #0056b3;
+}
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.file-list {
+  margin: auto;
+  width: 100%;
+}
+.undo {
+  margin-left: 5px;
+  margin-top: 8px;
+  padding: 5px 8px;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .uploadfile {
+    font-size: 12px;
+    padding: 10px;
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .general {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .general-left,
+  .general-right {
+    width: 100%;
+  }
+}
+@media (max-width: 390px) {
+  .candidate-box {
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+  }
+  .candidate-box > input,
+  .candidate-input,
+  .salary-container {
+    width: 100%;
+  }
+
+  .salary-input {
+    width: 100%;
+  }
+}

@@ -1,0 +1,156 @@
+/* Main Attendance Container */
+.attendance-container {
+  width: 100%;
+  height: 100%;
+  overflow: scroll;
+  margin: auto;
+  padding: 20px;
+  border-radius: 8px;
+  background: hsl(240, 33%, 97%);
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.24);
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+.attendance-container:hover {
+  box-shadow: rgba(50, 50, 93, 0.4) 0px 10px 20px -3px,
+    rgba(0, 0, 0, 0.3) 0px 6px 10px -5px;
+}
+
+.attendance-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Title at Top Left */
+.title {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 24px;
+  font-weight: 600;
+  color: hsl(226, 36%, 35%);
+  text-transform: uppercase;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Centered Calendar with Sky Blue Background */
+.calendar-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 60px;
+}
+
+.react-calendar {
+  width: 90%;
+  height: auto;
+  font-weight: bold;
+  background-color: rgb(163, 221, 245) !important;
+  border-radius: 10px;
+  border: 2px solid black;
+  padding: 12px;
+  transition: all 0.3s ease-in-out;
+}
+
+.react-calendar:hover {
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 8px 16px -2px,
+    rgba(0, 0, 0, 0.3) 0px 4px 8px -3px;
+}
+
+/* Bold Numbers */
+.bold-text {
+  font-weight: bold;
+}
+
+/* Weekend Days (Red Font) */
+.weekend {
+  color: red !important;
+}
+
+/* Government Holidays (Orange Font) */
+.govt-holiday {
+  color: orange !important;
+}
+
+/* Position Leave Status Strip Above the Date */
+.date-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Attendance Present (Green Strip - Top Left) */
+.attendance-present-strip {
+  width: 50%;
+  height: 3px;
+  background: rgb(25, 173, 25);
+  border-radius: 2px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Controls */
+.controls {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.controls p {
+  font-size: 17px;
+  font-weight: 500;
+  color: hsl(226, 36%, 30%);
+}
+
+.controls button {
+  padding: 12px 18px;
+  font-size: 16px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #0056b3, #41528a);
+  color: white;
+  margin: 8px;
+  border-radius: 12px;
+  border: 2px solid white;
+  font-weight: 600;
+  transition: all 0.3s ease-in-out;
+}
+
+.controls button:hover {
+  background: linear-gradient(135deg, #41528a, #0056b3);
+  box-shadow: rgba(50, 50, 93, 0.3) 0px 8px 16px -3px,
+    rgba(0, 0, 0, 0.3) 0px 5px 10px -4px;
+  transform: scale(1.05);
+}
+
+/* Check-in & Check-out Display */
+.today-in-out {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: hsl(226, 36%, 30%);
+}
+
+.display-time {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Total Time Display */
+.total-time {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+  margin-top: 10px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

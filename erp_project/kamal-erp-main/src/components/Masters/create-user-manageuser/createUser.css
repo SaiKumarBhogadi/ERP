@@ -1,0 +1,141 @@
+.createuser-container {
+  width: 100%;
+  height: 100%;
+  padding: 25px;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: gray transparent;
+}
+.x-logo-createuser {
+  width: 26.5px;
+  height: 26.5px;
+  padding: 5px;
+  fill: #fff;
+  background: rgba(35, 78, 112, 1);
+  border-radius: 5px;
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  cursor: pointer;
+}
+.createuser-head > p {
+  text-align: center;
+  color: rgba(35, 78, 112, 1);
+  font-size: 18px;
+  font-weight: 700;
+}
+.createuser-body > form {
+  margin-top: 25px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.createuser-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+}
+.createuser-box {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.createuser-box > label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.createuser-box > label > sup {
+  color: red;
+}
+.createuser-box > input,
+.createuser-box > select {
+  border: 2px solid rgba(226, 226, 226, 1);
+  border-radius: 10px;
+  padding: 7px 15px;
+  min-width: 195px;
+  background: rgba(249, 249, 249, 1);
+}
+.createuser-box > input::placeholder,
+.createuser-box > select::placeholder {
+  color: hsl(0, 0%, 80%);
+}
+.createuser-box > input:focus,
+.createuser-box > select:focus {
+  border-color: rgba(35, 78, 112, 1);
+  color: rgba(1, 19, 52, 1);
+  background: rgba(255, 255, 255, 1);
+}
+.createuser-submit-container {
+  width: 100%;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+.createuser-cancel {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  margin-right: 20px;
+}
+.createuser-save {
+  padding: 7px 25px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+}
+.increment-decrement-createuser {
+  appearance: none; /* Removes default UI in all browsers */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Hide number input arrows in Edge, Firefox, and WebKit browsers */
+.increment-decrement-createuser::-webkit-outer-spin-button,
+.increment-decrement-createuser::-webkit-inner-spin-button {
+  display: none;
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.increment-decrement-createuser[type="text"]::-ms-clear {
+  display: none; /* Hide clear button in Edge */
+}
+
+@media (max-width: 800px) {
+  .createuser-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .createuser-box {
+    width: 100%;
+  }
+  .createuser-head > p {
+    text-align: start;
+    margin-right: 40px;
+  }
+  .createuser-body {
+    gap: 15px;
+  }
+}
+@media (max-width: 465px) {
+  .createuser-cancel {
+    padding: 5px 20px;
+    margin-right: 10px;
+  }
+  .createuser-save {
+    padding: 5px 20px;
+  }
+}

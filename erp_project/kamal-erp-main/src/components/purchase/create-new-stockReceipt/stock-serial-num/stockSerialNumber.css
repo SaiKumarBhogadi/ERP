@@ -1,0 +1,271 @@
+.createNewStockSerial-container {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow: scroll;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.createNewStockSerial-container::-webkit-scrollbar {
+  display: none;
+}
+.createNewStockSerial-container > h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(35, 78, 112, 1);
+  text-align: center;
+  margin-bottom: 15px;
+}
+.createNewStockSerial-input-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-direction: row;
+  padding: 8px 0 30px 0;
+  flex-wrap: wrap;
+}
+.createNewStockSerial-input-container > div {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 3px;
+}
+.createNewStockSerial-input-container > div > label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(42, 42, 42, 1);
+}
+.createNewStockSerial-input-container > div > select,
+.createNewStockSerial-input-container > div > input {
+  border: 1px solid rgba(35, 78, 112, 1);
+  background-color: rgba(255, 255, 255, 1);
+  width: 100%;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 8px 12px;
+}
+.createNewStockSerial-input-container > div > input:focus,
+.createNewStockSerial-input-container > div > select:focus {
+  border: 1px solid rgba(35, 78, 112, 1);
+  background-color: #fff;
+  color: rgba(1, 19, 52, 1);
+}
+.createNewStockSerial-input-container > div > input::placeholder,
+.createNewStockSerial-input-container > div > select::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+
+/* createNewStockSerial-division */
+.createNewStockSerial-division {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  height: calc(100% - 200px); /* Adjust based on your header height */
+  min-height: 380px; /* Set a minimum height */
+}
+.createNewStockSerial-division > nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.createNewStockSerial-table {
+  flex: 1;
+  background-color: rgba(242, 242, 242, 1);
+  overflow: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  height: 100%; /* Match parent height */
+  max-height: 100%; /* Prevent overflow */
+}
+/* left side */
+.createNewStockSerial-serial-inp {
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 10px;
+}
+.createNewStockSerial-serial-inp:first-child {
+  margin-bottom: 20px;
+}
+.createNewStockSerial-serial-inp-box {
+  padding: 12px 16px;
+  display: flex;
+  gap: 15px;
+  justify-content: start;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.createNewStockSerial-serial-inp-box > label {
+  color: rgba(35, 78, 112, 1);
+  font-size: 14px;
+  font-weight: 500;
+}
+.createNewStockSerial-serial-inp-box > input,
+.createNewStockSerial-serial-inp-box > textarea {
+  border: 1px solid rgba(224, 228, 231, 1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex: 1;
+  background-color: transparent;
+}
+.createNewStockSerial-serial-inp-box > input::placeholder,
+.createNewStockSerial-serial-inp-box > textarea::placeholder {
+  color: rgba(176, 176, 176, 1);
+}
+.createNewStockSerial-serial-inp-box > input:focus,
+.createNewStockSerial-serial-inp-box > textarea:focus {
+  outline: none;
+}
+#createNewStockSerial-import-serial {
+  min-height: 60px;
+  border: 0;
+  text-align: start;
+}
+.createNewStockSerial-serial-inactive {
+  width: 100%;
+  border: 0;
+  background-color: rgba(176, 176, 176, 1);
+  padding: 12px 0;
+  border-radius: 0 0px 10px 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+.createNewStockSerial-serial-active {
+  width: 100%;
+  border: 0;
+  background-color: rgba(34, 197, 94, 1);
+  padding: 12px 0;
+  border-radius: 0 0px 10px 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+/* tit */
+.createNewStockSerial-imp-serialnum {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  cursor: pointer;
+  width: max-content;
+}
+.createNewStockSerial-imp-serialnum-blue {
+  color: rgba(35, 78, 112, 1);
+}
+.createNewStockSerial-imp-serialnum-black {
+  color: black;
+}
+/* duplicate */
+.createNewStockSerial-duplicate-tit {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(0, 0, 0);
+  margin-bottom: 4px;
+  width: max-content;
+  margin-top: 20px;
+}
+.createNewStockSerial-duplicate-box {
+  width: 100%;
+  background-color: rgba(249, 249, 249, 1);
+  font-size: 14px;
+  font-weight: 400;
+  padding: 12px 16px;
+  border: 1px solid rgba(226, 226, 226, 1);
+  border-radius: 10px;
+  min-height: 60px;
+  max-height: fit-content;
+}
+/* right */
+.createNewStockSerial-table > table {
+  width: 100%;
+  border-radius: 10px;
+  background-color: #fff;
+}
+
+.createNewStockSerial-table-head > tr {
+  border-radius: 13px 13px 0 0;
+}
+.createNewStockSerial-table-head > tr > th {
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #fff;
+  color: rgba(35, 78, 112, 1);
+  padding: 12px 16px;
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+  text-align: start;
+}
+.createNewStockSerial-table-body > tr > td {
+  font-size: 14px;
+  font-weight: 400;
+  text-align: start;
+  background-color: #fff;
+  color: black;
+  padding: 12px 16px;
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.119);
+}
+/* button container */
+.createNewStockSerial-btn-container {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap-reverse;
+}
+.createNewStockSerial-cancel-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: rgba(35, 78, 112, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+.createNewStockSerial-active-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(35, 78, 112, 1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(35, 78, 112, 1);
+  width: max-content;
+  cursor: pointer;
+}
+.createNewStockSerial-inactive-btn {
+  padding: 5px 15px;
+  border-radius: 6px;
+  border: 2px solid rgba(176, 176, 176, 1);
+  color: rgba(176, 176, 176, 1);
+  font-size: 16px;
+  font-weight: 600;
+  background: #fff;
+  width: max-content;
+  cursor: pointer;
+}
+@media (max-width: 950px) {
+  .createNewStockSerial-division {
+    flex-direction: column;
+    height: auto;
+  }
+  .createNewStockSerial-table {
+    max-height: 400px;
+    margin-top: 20px;
+  }
+}
+@media (max-width: 350px) {
+  .createNewStockSerial-serial-inp-box > input,
+  .createNewStockSerial-serial-inp-box > textarea {
+    flex: none;
+    width: 100%;
+  }
+}

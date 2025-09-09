@@ -1,0 +1,16 @@
+Product ID,Product Name,Type,Category,Status,Stock Level,Price
+CVB001,T-Shirt,Goods,Fashion,Active,120,4001
+CVB002,Jeans,Goods,Fashion,Active,85,2500
+CVB003,Sneakers,Goods,Fashion,Active,60,3200
+CVB004,Backpack,Goods,Fashion,Active,40,1800
+CVB005,Watch,Goods,Fashion,Active,30,5000
+CVB006,Sunglasses,Goods,Fashion,Active,90,1500
+CVB007,Hat,Goods,Fashion,Active,55,1000
+CVB008,Jacket,Goods,Fashion,Active,25,4500
+CVB009,Sweater,Goods,Fashion,Active,70,3000
+CVB0010,Shorts,Goods,Fashion,Active,100,2200
+CVB0011,Dress,Goods,Fashion,Active,35,3500
+CVB0012,Boots,Goods,Fashion,Active,20,6000
+CVB0013,Scarf,Goods,Fashion,Active,65,800
+CVB0014,Gloves,Goods,Fashion,Active,45,700
+CVB0015,Belt,Goods,Fashion,Active,80,1200

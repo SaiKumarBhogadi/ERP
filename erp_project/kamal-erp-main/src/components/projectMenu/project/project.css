@@ -1,0 +1,83 @@
+.project-page {
+  width: 100%;
+  height: 100%;
+  padding: 15px;
+  background: hsl(240, 33%, 97%);
+  position: relative;
+  border-radius: 5px;
+  overflow: scroll;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+.project-page::-webkit-scrollbar {
+  display: none;
+}
+.project-page > h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: hsl(226, 36%, 35%);
+  text-transform: uppercase;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+.project-list {
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: gray transparent;
+  margin-top: 20px;
+}
+.project-list > table {
+  width: 70%;
+  height: auto;
+  margin: auto;
+}
+.project-list > table > thead > tr > th {
+  text-align: center;
+  padding: 13px;
+  min-width: 140px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.project-list > table > tbody > tr > td {
+  text-align: center;
+  padding: 13px;
+  min-width: 140px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #41528a;
+}
+.table-line {
+  border-bottom: 2px solid rgba(172, 220, 250, 0.507);
+}
+
+.table-line > abbr {
+  text-decoration: none;
+}
+
+.view-project {
+  padding: 8px 10px;
+  background-image: linear-gradient(#0056b3, #405189);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  cursor: pointer;
+}
+.view-project:hover {
+  background-image: linear-gradient(#405189, #0056b3);
+  transform: scale(1.05);
+}
+#black {
+  color: #000;
+}
+
+@media (max-width: 680px) {
+  .project-list > table > thead > tr > th {
+    min-width: 130px;
+  }
+  .project-list > table > tbody > tr > td {
+    min-width: 130px;
+  }
+}
