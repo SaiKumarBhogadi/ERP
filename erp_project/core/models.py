@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models import JSONField
+from django.contrib.auth.models import User
+from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -15,29 +18,26 @@ class Branch(models.Model):
         verbose_name_plural = "Branches"
 
 class Department(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL,null=True)
     code = models.CharField(max_length=50, unique=True)
     department_name = models.CharField(max_length=100, unique=True)
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
-    branch_name = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if self.branch:
-            self.branch_name = self.branch.name  # auto-fill from related Branch
-        super().save(*args, **kwargs)
+        super().save(*args, **kwargs) 
 
     def __str__(self):
-        return self.department_name  # fixed to match field name
+        return self.department_name
 
     class Meta:
         verbose_name = "Department"
         verbose_name_plural = "Departments"
 
 class Role(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='roles')
     role = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='roles')
-    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     permissions = models.JSONField(default=dict, blank=True)
 
     def save(self, *args, **kwargs):
@@ -52,10 +52,9 @@ class Role(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    phone = models.CharField(max_length=15, blank=True, null=True)
+    contact_number = models.CharField(max_length=15, blank=True, null=True)
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     profilePic = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
-    contact_number = models.CharField(max_length=15, blank=True, null=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name='primary_branch')
     available_branches = JSONField(blank=True, default=list)
@@ -68,10 +67,6 @@ class Profile(models.Model):
         return f"{self.user.username}'s Profile"
     
 
-
-
-from django.db import models
-from django.contrib.auth.models import User
 
 
 
@@ -196,8 +191,6 @@ class Product(models.Model):
     
 
 
-from django.db import models
-from django.db.models import JSONField
 
 class Candidate(models.Model):
     employee_code = models.CharField(max_length=10, unique=True, editable=False)
@@ -259,9 +252,8 @@ class Candidate(models.Model):
         return f"{self.employee_code} - {self.first_name} {self.last_name}"
     
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
+
+
 
 class GovernmentHoliday(models.Model):
     date = models.DateField(unique=True)
@@ -307,9 +299,8 @@ class Task(models.Model):
     def __str__(self):
         return self.name
     
-from django.db import models
-from .models import Candidate
-  # Adjust import to your Onboarding model
+
+
 
 class Customer(models.Model):
     first_name = models.CharField(max_length=100)
@@ -344,7 +335,7 @@ class Customer(models.Model):
     location = models.CharField(max_length=100, blank=True)
     gst_tax_id = models.CharField(max_length=20, blank=True)
     credit_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
-    available_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True)  # Added blank=True
+    available_limit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00, blank=True)  
     billing_address = models.TextField(blank=True)
     shipping_address = models.TextField(blank=True)
     payment_terms = models.CharField(max_length=50, blank=True)

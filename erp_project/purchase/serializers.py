@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PurchaseOrder, PurchaseOrderItem, PurchaseOrderHistory, PurchaseOrderComment
+from .models import PurchaseOrder, PurchaseOrderItem, PurchaseOrderHistory, PurchaseOrderComment 
 
 class PurchaseOrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,6 +79,10 @@ class SerialNumberSerializer(serializers.ModelSerializer):
         model = SerialNumber
         fields = ['id', 'serial_no']
 
+    def create(self, validated_data):
+        stock_receipt_item = self.context.get('stock_receipt_item')
+        return SerialNumber.objects.create(stock_receipt_item=stock_receipt_item, **validated_data)
+
 class BatchSerialNumberSerializer(serializers.ModelSerializer):
     class Meta:
         model = BatchSerialNumber
@@ -92,8 +96,9 @@ class BatchNumberSerializer(serializers.ModelSerializer):
         fields = ['id', 'batch_no', 'batch_qty', 'mfg_date', 'expiry_date', 'serial_numbers']
 
     def create(self, validated_data):
+        stock_receipt_item = self.context.get('stock_receipt_item')
         serial_numbers_data = validated_data.pop('serial_numbers', [])
-        batch = BatchNumber.objects.create(**validated_data)
+        batch = BatchNumber.objects.create(stock_receipt_item=stock_receipt_item, **validated_data)
         for serial_data in serial_numbers_data:
             BatchSerialNumber.objects.create(batch_number=batch, **serial_data)
         return batch
@@ -104,11 +109,14 @@ class StockReceiptItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StockReceiptItem
-        fields = ['id', 'product', 'product_id', 'uom', 'qty_ordered', 'qty_received', 'accepted_qty', 'rejected_qty', 'qty_returned', 'stock_dim', 'warehouse', 'serial_numbers', 'batch_numbers']
+        fields = ['id', 'product', 'uom', 'qty_ordered', 'qty_received', 'accepted_qty', 'rejected_qty', 'qty_returned', 'stock_dim', 'warehouse', 'unit_price', 'tax', 'discount', 'total', 'serial_numbers', 'batch_numbers']
         extra_kwargs = {
-            'product_id': {'required': False, 'allow_blank': True},
             'uom': {'required': False, 'allow_blank': True},
             'qty_ordered': {'required': False, 'allow_null': True},
+            'unit_price': {'required': True},
+            'tax': {'required': True},
+            'discount': {'required': True},
+            'total': {'read_only': True},
         }
 
     def create(self, validated_data):
@@ -116,10 +124,24 @@ class StockReceiptItemSerializer(serializers.ModelSerializer):
         batch_numbers_data = validated_data.pop('batch_numbers', [])
         item = StockReceiptItem.objects.create(**validated_data)
         for serial_data in serial_numbers_data:
-            SerialNumber.objects.create(stock_receipt_item=item, **serial_data)
+            SerialNumberSerializer(context={'stock_receipt_item': item}).create(serial_data)
         for batch_data in batch_numbers_data:
-            BatchNumberSerializer().create(batch_data)
+            BatchNumberSerializer(context={'stock_receipt_item': item}).create(batch_data)
         return item
+
+    def update(self, instance, validated_data):
+        serial_numbers_data = validated_data.pop('serial_numbers', [])
+        batch_numbers_data = validated_data.pop('batch_numbers', [])
+        instance = super().update(instance, validated_data)
+        if serial_numbers_data:
+            instance.serial_numbers.all().delete()
+            for serial_data in serial_numbers_data:
+                SerialNumberSerializer(context={'stock_receipt_item': instance}).create(serial_data)
+        if batch_numbers_data:
+            instance.batch_numbers.all().delete()
+            for batch_data in batch_numbers_data:
+                BatchNumberSerializer(context={'stock_receipt_item': instance}).create(batch_data)
+        return instance
 
 class StockReceiptSerializer(serializers.ModelSerializer):
     items = StockReceiptItemSerializer(many=True, required=False)
@@ -160,4 +182,104 @@ class StockReceiptSerializer(serializers.ModelSerializer):
             instance.remarks.all().delete()
             for remark_data in remarks_data:
                 StockReceiptRemark.objects.create(stock_receipt=instance, **remark_data)
+        return instance
+    
+from rest_framework import serializers
+from .models import StockReturn, StockReturnItem, SerialNumberReturn, StockReturnRemark, StockReturnAttachment
+from .models import StockReceiptItem
+from .serializers import SerialNumberSerializer
+
+class StockReturnAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockReturnAttachment
+        fields = ['id', 'file']
+
+class StockReturnRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockReturnRemark
+        fields = ['id', 'text', 'created_by', 'timestamp']
+
+class SerialNumberReturnSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SerialNumberReturn
+        fields = ['id', 'serial_no']
+
+class StockReturnItemSerializer(serializers.ModelSerializer):
+    serial_numbers = SerialNumberReturnSerializer(many=True, required=False)
+    available_serials = serializers.SerializerMethodField()  # For popup data
+
+    class Meta:
+        model = StockReturnItem
+        fields = ['id', 'stock_return', 'stock_receipt_item', 'product', 'uom', 'qty_ordered', 'qty_rejected', 'qty_returned', 'return_reason', 'unit_price', 'tax', 'discount', 'total', 'serial_numbers', 'available_serials']
+        extra_kwargs = {
+            'uom': {'required': False, 'allow_blank': True},
+            'qty_ordered': {'required': False, 'allow_null': True},
+            'qty_rejected': {'required': False, 'allow_null': True},
+            'unit_price': {'required': False},
+            'tax': {'required': False},
+            'discount': {'required': False},
+            'total': {'read_only': True},
+            'stock_return': {'required': False},
+        }
+
+    def get_available_serials(self, obj):
+        if obj.stock_receipt_item and obj.stock_receipt_item.stock_dim == 'Serial':
+            return SerialNumberSerializer(obj.stock_receipt_item.serial_numbers.all(), many=True).data
+        return []
+
+    def create(self, validated_data):
+        serial_numbers_data = validated_data.pop('serial_numbers', [])
+        item = StockReturnItem.objects.create(**validated_data)
+        for serial_data in serial_numbers_data:
+            SerialNumberReturn.objects.create(stock_return_item=item, **serial_data)
+        return item
+
+    def update(self, instance, validated_data):
+        serial_numbers_data = validated_data.pop('serial_numbers', [])
+        instance = super().update(instance, validated_data)
+        if serial_numbers_data:
+            instance.serial_numbers.all().delete()
+            for serial_data in serial_numbers_data:
+                SerialNumberReturn.objects.create(stock_return_item=instance, **serial_data)
+        return instance
+
+class StockReturnSerializer(serializers.ModelSerializer):
+    items = StockReturnItemSerializer(many=True, required=False)
+    attachments = StockReturnAttachmentSerializer(many=True, required=False)
+    remarks = StockReturnRemarkSerializer(many=True, required=False)
+
+    class Meta:
+        model = StockReturn
+        fields = ['id', 'SRN_ID', 'PO_reference', 'GRN_reference', 'received_date', 'return_date', 'return_initiated_by', 'supplier', 'status', 'original_purchased_total', 'global_discount', 'return_subtotal', 'global_discount_amount', 'rounding_adjustment', 'amount_to_recover', 'remarks', 'attachments', 'items']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        stock_return = StockReturn.objects.create(**validated_data)
+        for item_data in items_data:
+            StockReturnItemSerializer().create(item_data)
+        for attachment_data in attachments_data:
+            StockReturnAttachment.objects.create(stock_return=stock_return, **attachment_data)
+        for remark_data in remarks_data:
+            StockReturnRemark.objects.create(stock_return=stock_return, **remark_data)
+        return stock_return
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        instance = super().update(instance, validated_data)
+        if items_data:
+            instance.items.all().delete()
+            for item_data in items_data:
+                StockReturnItemSerializer().create(item_data)
+        if attachments_data:
+            instance.attachments.all().delete()
+            for attachment_data in attachments_data:
+                StockReturnAttachment.objects.create(stock_return=instance, **attachment_data)
+        if remarks_data:
+            instance.remarks.all().delete()
+            for remark_data in remarks_data:
+                StockReturnRemark.objects.create(stock_return=instance, **remark_data)
         return instance

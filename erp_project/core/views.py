@@ -78,7 +78,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'profilePic': user.profile.profilePic.url if user.profile.profilePic else None,  # Use .url
                         'jobRole': user.profile.role.name if user.profile.role else None,
-                        'mobile': user.profile.phone,
+                        'mobile': user.profile.contact_number,
                     }
                 }, status=status.HTTP_200_OK)
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -131,66 +131,66 @@ class ResetPasswordView(APIView):
 
 
 
-# views.py (ProfileView section)
-class ProfileView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializers import (
+    BranchSerializer, DepartmentSerializer, DepartmentDropdownSerializer,
+    DepartmentCreateSerializer, RoleSerializer, RoleUpdateSerializer,
+    ProfileDetailSerializer, ProfileUpdateSerializer
+)
+from .models import Branch, Department, Role, Profile
+
+class RoleBasedPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # Placeholder: Implement your role-based permission logic here
+        return request.user.is_authenticated
+
+class BranchListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
 
     def get(self, request):
-        profile = request.user.profile
-        serializer = ProfileDetailSerializer(profile)
-        return Response({
-            'user': {
-                'id': request.user.id,
-                'name': request.user.first_name,
-                'email': request.user.email,
-                'profilePic': profile.profilePic.url if profile.profilePic else None,  # Use .url
-                'jobRole': profile.role.name if profile.role else None,
-                'mobile': profile.phone,
-                'department': profile.department.name if profile.department else None,
-                'branch': profile.branch.name if profile.branch else None,
-                'available_branches': [branch.name for branch in profile.available_branches.all()] if profile.available_branches.exists() else [],
-                'reporting_to': profile.reporting_to.first_name if profile.reporting_to else None,
-                'employee_id': profile.employee_id,
-            }
-        }, status=status.HTTP_200_OK)
+        branches = Branch.objects.all()
+        serializer = BranchSerializer(branches, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request):
-        profile = request.user.profile
-        data = request.data.dict()
-        password_data = {
-            'password': data.pop('password', None),
-            'confirm_password': data.pop('confirm_password', None)
-        }
-
-        serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
+    def post(self, request):
+        serializer = BranchSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            updated_profile = serializer.instance
-
-            if password_data['password'] and password_data['confirm_password']:
-                password_serializer = ProfileChangePasswordSerializer(data=password_data)
-                if password_serializer.is_valid():
-                    password_serializer.update(request.user, password_serializer.validated_data)
-                else:
-                    return Response(password_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-            return Response({
-                'user': {
-                    'id': request.user.id,
-                    'name': request.user.first_name,
-                    'email': request.user.email,
-                    'profilePic': updated_profile.profilePic.url if updated_profile.profilePic else None,  # Use .url
-                    'jobRole': updated_profile.role.name if updated_profile.role else None,
-                    'mobile': updated_profile.phone,
-                    'department': updated_profile.department.name if updated_profile.department else None,
-                    'branch': updated_profile.branch.name if updated_profile.branch else None,
-                    'available_branches': [branch.name for branch in updated_profile.available_branches.all()] if updated_profile.available_branches.exists() else [],
-                    'reporting_to': updated_profile.reporting_to.first_name if updated_profile.reporting_to else None,
-                    'employee_id': updated_profile.employee_id,
-                }
-            }, status=status.HTTP_200_OK)
+            branch = serializer.save()
+            return Response(BranchSerializer(branch).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class BranchDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
+
+    def get(self, request, pk):
+        try:
+            branch = Branch.objects.get(pk=pk)
+            serializer = BranchSerializer(branch)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Branch.DoesNotExist:
+            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        try:
+            branch = Branch.objects.get(pk=pk)
+            serializer = BranchSerializer(branch, data=request.data, partial=True)
+            if serializer.is_valid():
+                branch = serializer.save()
+                return Response(BranchSerializer(branch).data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Branch.DoesNotExist:
+            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            branch = Branch.objects.get(pk=pk)
+            branch.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Branch.DoesNotExist:
+            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class DepartmentListView(APIView):
     permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
@@ -198,13 +198,29 @@ class DepartmentListView(APIView):
     def get(self, request):
         page = int(request.query_params.get('page', 1))
         per_page = int(request.query_params.get('per_page', 5))
+        branch_id = request.query_params.get('branch')
+        dropdown = request.query_params.get('dropdown', 'false').lower() == 'true'
+        include_roles = request.query_params.get('include_roles', 'false').lower() == 'true'
+
         departments = Department.objects.all()
-        paginator = Paginator(departments, per_page)
-        page_obj = paginator.get_page(page)
-        serializer = DepartmentSerializer(page_obj, many=True)
+        if branch_id:
+            try:
+                departments = departments.filter(branch_id=branch_id)
+            except ValueError:
+                return Response({'error': 'Invalid branch ID'}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = PageNumberPagination()
+        paginator.page_size = per_page
+        page_obj = paginator.paginate_queryset(departments, request)
+
+        if dropdown:
+            serializer = DepartmentDropdownSerializer(page_obj, many=True)
+        else:
+            serializer = DepartmentSerializer(page_obj, many=True, context={'include_roles': include_roles})
+
         return Response({
             'departments': serializer.data,
-            'total_pages': paginator.num_pages,
+            'total_pages': paginator.page.paginator.num_pages,
             'current_page': page,
             'total_entries': departments.count(),
         }, status=status.HTTP_200_OK)
@@ -252,32 +268,33 @@ class RoleView(APIView):
     def get(self, request):
         page = int(request.query_params.get('page', 1))
         per_page = int(request.query_params.get('per_page', 10))
-
-        department_id = request.query_params.get('department')  # 👈
+        department_id = request.query_params.get('department')
 
         roles = Role.objects.all().order_by('id')
-
         if department_id:
-            roles = roles.filter(department_id=department_id)
+            try:
+                roles = roles.filter(department_id=department_id)
+            except ValueError:
+                return Response({'error': 'Invalid department ID'}, status=status.HTTP_400_BAD_REQUEST)
 
-        paginator = Paginator(roles, per_page)
-        page_obj = paginator.get_page(page)
+        paginator = PageNumberPagination()
+        paginator.page_size = per_page
+        page_obj = paginator.paginate_queryset(roles, request)
         serializer = RoleSerializer(page_obj, many=True)
 
         return Response({
             'roles': serializer.data,
-            'total_pages': paginator.num_pages,
+            'total_pages': paginator.page.paginator.num_pages,
             'current_page': page,
             'total_entries': roles.count(),
         }, status=status.HTTP_200_OK)
 
     def post(self, request):
-        serializer = RoleSerializer(data=request.data)
+        serializer = RoleUpdateSerializer(data=request.data)
         if serializer.is_valid():
             role = serializer.save()
             return Response(RoleSerializer(role).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class RoleDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
@@ -297,15 +314,19 @@ class RoleDetailView(APIView):
 
             roles = Role.objects.all().order_by('id')
             if department_id:
-                roles = roles.filter(department_id=department_id)
+                try:
+                    roles = roles.filter(department_id=department_id)
+                except ValueError:
+                    return Response({'error': 'Invalid department ID'}, status=status.HTTP_400_BAD_REQUEST)
 
-            paginator = Paginator(roles, per_page)
-            page_obj = paginator.get_page(page)
+            paginator = PageNumberPagination()
+            paginator.page_size = per_page
+            page_obj = paginator.paginate_queryset(roles, request)
             serializer = RoleSerializer(page_obj, many=True)
 
             return Response({
                 'roles': serializer.data,
-                'total_pages': paginator.num_pages,
+                'total_pages': paginator.page.paginator.num_pages,
                 'current_page': page,
                 'total_entries': roles.count(),
             }, status=status.HTTP_200_OK)
@@ -313,7 +334,7 @@ class RoleDetailView(APIView):
     def put(self, request, pk):
         try:
             role = Role.objects.get(pk=pk)
-            serializer = RoleSerializer(role, data=request.data, partial=True)
+            serializer = RoleUpdateSerializer(role, data=request.data, partial=True)
             if serializer.is_valid():
                 role = serializer.save()
                 return Response(RoleSerializer(role).data, status=status.HTTP_200_OK)
@@ -328,6 +349,42 @@ class RoleDetailView(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Role.DoesNotExist:
             return Response({'error': 'Role not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            profile = request.user.profile
+            serializer = ProfileDetailSerializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request):
+        try:
+            profile = request.user.profile
+            data = request.data.copy() if hasattr(request.data, 'copy') else request.data
+            password_data = {
+                'password': data.pop('password', None),
+                'confirm_password': data.pop('confirm_password', None)
+            }
+
+            serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
+            if serializer.is_valid():
+                profile = serializer.save()
+
+                if password_data['password'] and password_data['confirm_password']:
+                    password_serializer = ProfileChangePasswordSerializer(data=password_data)
+                    if password_serializer.is_valid():
+                        password_serializer.update(request.user, password_serializer.validated_data)
+                    else:
+                        return Response(password_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+                return Response(ProfileDetailSerializer(profile).data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Profile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class ManageUsersView(APIView):
     permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
@@ -432,51 +489,7 @@ class ManageUserDetailView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'Candidate not found'}, status=status.HTTP_404_NOT_FOUND)
 
-class BranchListView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
 
-    def get(self, request):
-        branches = Branch.objects.all()
-        serializer = BranchSerializer(branches, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = BranchSerializer(data=request.data)
-        if serializer.is_valid():
-            branch = serializer.save()
-            return Response(BranchSerializer(branch).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class BranchDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated, RoleBasedPermission]
-
-    def get(self, request, pk):
-        try:
-            branch = Branch.objects.get(pk=pk)
-            serializer = BranchSerializer(branch)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Branch.DoesNotExist:
-            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    def put(self, request, pk):
-        try:
-            branch = Branch.objects.get(pk=pk)
-            serializer = BranchSerializer(branch, data=request.data, partial=True)
-            if serializer.is_valid():
-                branch = serializer.save()
-                return Response(BranchSerializer(branch).data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Branch.DoesNotExist:
-            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    def delete(self, request, pk):
-        try:
-            branch = Branch.objects.get(pk=pk)
-            branch.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Branch.DoesNotExist:
-            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
-        
 
 
 from rest_framework.views import APIView

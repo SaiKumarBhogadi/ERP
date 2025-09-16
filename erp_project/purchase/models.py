@@ -108,21 +108,25 @@ class StockReceipt(models.Model):
 class StockReceiptItem(models.Model):
     stock_receipt = models.ForeignKey(StockReceipt, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
-    product_id = models.CharField(max_length=50, blank=True)  # Auto-filled from Product via frontend
-    uom = models.CharField(max_length=50, blank=True)  # Auto-filled from Product via frontend
-    qty_ordered = models.IntegerField(blank=True, null=True)  # Auto-filled from PO via frontend
-    qty_received = models.IntegerField()  # Input by user
-    accepted_qty = models.IntegerField()  # Input by user
+    uom = models.CharField(max_length=50, blank=True)
+    qty_ordered = models.IntegerField(blank=True, null=True)
+    qty_received = models.IntegerField()
+    accepted_qty = models.IntegerField()
     rejected_qty = models.IntegerField(default=0)
     qty_returned = models.IntegerField(default=0)
     stock_dim = models.CharField(max_length=20, choices=[('None', 'None'), ('Serial', 'Serial'), ('Batch', 'Batch')], default='None')
     warehouse = models.ForeignKey(Warehouse, on_delete=models.SET_NULL, null=True, blank=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def save(self, *args, **kwargs):
         if not self.rejected_qty:
             self.rejected_qty = self.qty_received - self.accepted_qty
         if self.rejected_qty < 0:
             self.rejected_qty = 0
+        self.total = self.qty_received * self.unit_price * (1 - self.discount / 100) * (1 + self.tax / 100)
         super().save(*args, **kwargs)
 
 class SerialNumber(models.Model):
@@ -139,3 +143,87 @@ class BatchNumber(models.Model):
 class BatchSerialNumber(models.Model):
     batch_number = models.ForeignKey(BatchNumber, on_delete=models.CASCADE, related_name='serial_numbers')
     serial_no = models.CharField(max_length=50, unique=True)
+
+
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth.models import User
+from purchase.models import PurchaseOrder
+from .models import StockReceipt, StockReceiptItem
+from core.models import Supplier, Product, Warehouse
+
+def get_default_srn_date():
+    return timezone.now().date()
+
+class StockReturnAttachment(models.Model):
+    stock_return = models.ForeignKey('StockReturn', on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='stock_return_attachments/')
+
+class StockReturnRemark(models.Model):
+    stock_return = models.ForeignKey('StockReturn', on_delete=models.CASCADE, related_name='remarks')
+    text = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class StockReturn(models.Model):
+    SRN_ID = models.CharField(max_length=20, unique=True, editable=False)
+    PO_reference = models.ForeignKey(PurchaseOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    GRN_reference = models.ForeignKey(StockReceipt, on_delete=models.SET_NULL, null=True, blank=True)
+    received_date = models.DateField()
+    return_date = models.DateField(default=get_default_srn_date)
+    return_initiated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'department__department_name': 'Sales'})
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('Draft', 'Draft'), ('Submitted', 'Submitted'), ('Partially Returned', 'Partially Returned'), ('Cancelled', 'Cancelled')],
+        default='Draft'
+    )
+    original_purchased_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    global_discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    return_subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    global_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    rounding_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    amount_to_recover = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if not self.SRN_ID:
+            last_srn = StockReturn.objects.order_by('-id').first()
+            new_id = f'SRN-{timezone.now().strftime("%Y%m%d")}-{str(last_srn.id + 1).zfill(4) if last_srn else "0001"}'
+            self.SRN_ID = new_id
+        if self.pk and self.items.exists():
+            self.return_subtotal = sum(item.total for item in self.items.all())
+            self.global_discount_amount = self.return_subtotal * (self.global_discount / 100)
+            self.amount_to_recover = self.return_subtotal - self.global_discount_amount + self.rounding_adjustment
+        super().save(*args, **kwargs)
+
+class StockReturnItem(models.Model):
+    stock_return = models.ForeignKey(StockReturn, on_delete=models.CASCADE, related_name='items')
+    stock_receipt_item = models.ForeignKey(StockReceiptItem, on_delete=models.SET_NULL, null=True, blank=True)  # Link to original item
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    uom = models.CharField(max_length=50, blank=True)
+    qty_ordered = models.IntegerField(blank=True, null=True)
+    qty_rejected = models.IntegerField(blank=True, null=True)
+    qty_returned = models.IntegerField()
+    return_reason = models.TextField(blank=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if self.stock_receipt_item:
+            self.product = self.stock_receipt_item.product
+            self.uom = self.stock_receipt_item.uom
+            self.qty_ordered = self.stock_receipt_item.qty_ordered
+            self.qty_rejected = self.stock_receipt_item.rejected_qty
+            self.unit_price = self.stock_receipt_item.unit_price
+            self.tax = self.stock_receipt_item.tax
+            self.discount = self.stock_receipt_item.discount
+        self.total = self.qty_returned * self.unit_price * (1 - self.discount / 100) * (1 + self.tax / 100)
+        if self.qty_returned > (self.qty_rejected or 0):
+            raise ValueError("Qty returned cannot exceed rejected qty")
+        super().save(*args, **kwargs)
+
+class SerialNumberReturn(models.Model):
+    stock_return_item = models.ForeignKey(StockReturnItem, on_delete=models.CASCADE, related_name='serial_numbers')
+    serial_no = models.CharField(max_length=50)

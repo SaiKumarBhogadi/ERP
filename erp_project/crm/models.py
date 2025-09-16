@@ -7,7 +7,7 @@ class Enquiry(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100, blank=True)
     email = models.EmailField()
-    phone_number = models.CharField(max_length=15)
+    phone_number = models.IntegerField()
     street_address = models.CharField(max_length=200, blank=True)
     apartment = models.CharField(max_length=100, blank=True)
     city = models.CharField(max_length=100)

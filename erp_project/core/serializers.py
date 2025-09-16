@@ -1,35 +1,50 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Department, Branch, Role , Candidate
+from .models import Profile, Department, Branch, Role, Candidate
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
         fields = ['id', 'name']
 
-# class RoleSerializer(serializers.ModelSerializer):
-#     department_id = serializers.IntegerField(source='department.id', read_only=True)
-#     department_name = serializers.CharField(source='department.department_name', read_only=True)
-#     branch_id = serializers.IntegerField(source='branch.id', read_only=True)  # <-- fixed
-#     branch_name = serializers.CharField(source='branch.name', read_only=True)  # <-- fixed
+class DepartmentDropdownSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Department
+        fields = ['id', 'department_name']
 
-#     class Meta:
-#         model = Role
-#         fields = [
-#             'id', 'role', 'description', 'permissions',
-#             'department', 'department_id', 'department_name',
-#             'branch', 'branch_id', 'branch_name',  # <-- include 'branch'
-#         ]
-        
-from rest_framework import serializers
-from .models import Role
-from core.models import Department, Branch
+class DepartmentSerializer(serializers.ModelSerializer):
+    branch = BranchSerializer(read_only=True)
+    roles = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Department
+        fields = ['id', 'code', 'department_name', 'branch', 'description', 'roles']
+
+    def get_roles(self, obj):
+        if self.context.get('include_roles', True):
+            return RoleSerializer(obj.roles.all(), many=True).data
+        return []
+
+class DepartmentCreateSerializer(serializers.ModelSerializer):
+    branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())  # Mandatory
+
+    class Meta:
+        model = Department
+        fields = ['id', 'code', 'department_name', 'branch', 'description']
 
 class RoleSerializer(serializers.ModelSerializer):
-    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
-    branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all(), allow_null=True, required=False)
     department_name = serializers.CharField(source='department.department_name', read_only=True)
-    branch_name = serializers.CharField(source='branch.name', read_only=True, allow_null=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
+
+    class Meta:
+        model = Role
+        fields = ['id', 'role', 'description', 'permissions', 'department_name', 'branch_name']
+
+class RoleUpdateSerializer(serializers.ModelSerializer):
+    department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())  # Mandatory
+    branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())  # Mandatory
+    department_name = serializers.CharField(source='department.department_name', read_only=True)
+    branch_name = serializers.CharField(source='branch.name', read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
     permissions = serializers.JSONField(required=False, allow_null=True, default=dict)
 
@@ -43,27 +58,9 @@ class RoleSerializer(serializers.ModelSerializer):
         if not isinstance(value, dict):
             raise serializers.ValidationError("Permissions must be a valid JSON object.")
         return value
-        
-class DepartmentSerializer(serializers.ModelSerializer):
-    branch = BranchSerializer(read_only=True)
-    roles = RoleSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Department
-        fields = ['id', 'code', 'department_name', 'branch', 'description', 'roles']
-
-class DepartmentCreateSerializer(serializers.ModelSerializer):
-    branch = serializers.PrimaryKeyRelatedField(
-        queryset=Branch.objects.all(),
-        allow_null=True
-    )
-
-    class Meta:
-        model = Department
-        fields = ['code', 'department_name', 'branch', 'description']
 
 
-# serializers.py
+
 class ProfileDetailSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     branch = BranchSerializer(read_only=True)
@@ -74,7 +71,7 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = [
-            'phone', 'role', 'profilePic', 'contact_number', 'department',
+            'role', 'profilePic', 'contact_number', 'department',
             'branch', 'available_branches', 'reporting_to', 'employee_id'
         ]
 
@@ -85,21 +82,27 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     reporting_to = serializers.CharField(allow_null=True, read_only=True)
     role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), allow_null=True)
     profilePic = serializers.ImageField(allow_empty_file=True, required=False)
+    contact_number = serializers.CharField(max_length=15, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Profile
         fields = [
-            'phone', 'role', 'profilePic', 'contact_number', 'department',
+            'role', 'profilePic', 'contact_number', 'department',
             'branch', 'available_branches', 'reporting_to', 'employee_id'
         ]
 
+    def validate_contact_number(self, value):
+        if value and not value.replace("+", "").replace("-", "").replace(" ", "").isdigit():
+            raise serializers.ValidationError("Contact number must contain only digits, +, -, or spaces.")
+        return value
+
     def validate_employee_id(self, value):
-        if value and self.instance:  # Only validate for updates if value is provided
+        if value and self.instance:
             if self.instance.employee_id == value:
-                return value  # Skip uniqueness check for same value
+                return value
             if Profile.objects.exclude(pk=self.instance.pk).filter(employee_id=value).exists():
                 raise serializers.ValidationError("Employee ID must be unique.")
-        elif value:  # For creates
+        elif value:
             if Profile.objects.filter(employee_id=value).exists():
                 raise serializers.ValidationError("Employee ID must be unique.")
         return value

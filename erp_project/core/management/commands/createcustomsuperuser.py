@@ -11,10 +11,12 @@ class Command(createsuperuser.Command):
     def add_arguments(self, parser):
         super().add_arguments(parser)
         # Add arguments for profile fields
-        parser.add_argument('--phone', dest='phone', default=None, help='Phone number')
+       
         parser.add_argument('--profile-pic', dest='profile_pic', default=None, help='Profile picture URL')
         parser.add_argument('--contact-number', dest='contact_number', default=None, help='Contact number')
         parser.add_argument('--employee-id', dest='employee_id', default=None, help='Employee ID')
+        # Add last name argument
+        parser.add_argument('--last-name', dest='last_name', default=None, help='Last name')
 
     def handle(self, *args, **options):
         # Skip username prompt since we use email
@@ -29,6 +31,10 @@ class Command(createsuperuser.Command):
         if not first_name:
             first_name = self.get_input_data('first_name', 'First name: ')
 
+        last_name = options.get('last_name')
+        if not last_name:
+            last_name = self.get_input_data('last_name', 'Last name: ')
+
         password = options.get('password')
         if not password:
             password = self.get_input_data('password', 'Password: ', is_password=True)
@@ -37,10 +43,6 @@ class Command(createsuperuser.Command):
                 raise CommandError("Error: Your passwords didn't match.")
 
         # Prompt for profile fields (optional)
-        phone = options.get('phone')
-        if not phone:
-            phone = self.get_input_data('phone', 'Phone number (optional): ', default='')
-
         profile_pic = options.get('profile_pic')
         if not profile_pic:
             profile_pic = self.get_input_data('profile_pic', 'Profile picture URL (optional): ', default='')
@@ -55,16 +57,16 @@ class Command(createsuperuser.Command):
 
         # Create the superuser
         user = User.objects.create_superuser(
-            username=email,  # Set username to email since User model requires it
+            username=email,  # Using email as username
             email=email,
             password=password,
-            first_name=first_name
+            first_name=first_name,
+            last_name=last_name
         )
 
         # Create the associated Profile
         Profile.objects.create(
             user=user,
-            phone=phone if phone else None,
             profilePic=profile_pic if profile_pic else None,
             contact_number=contact_number if contact_number else None,
             employee_id=employee_id if employee_id else None
