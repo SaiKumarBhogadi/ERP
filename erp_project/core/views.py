@@ -39,12 +39,7 @@ class RegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
+
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -77,7 +72,7 @@ class LoginView(APIView):
                         'name': user.first_name,
                         'email': user.email,
                         'profilePic': user.profile.profilePic.url if user.profile.profilePic else None,  # Use .url
-                        'jobRole': user.profile.role.name if user.profile.role else None,
+                        'jobRole': user.profile.role.role if user.profile.role else None,
                         'mobile': user.profile.contact_number,
                     }
                 }, status=status.HTTP_200_OK)
@@ -1091,6 +1086,20 @@ logger = logging.getLogger(__name__)
 #             )
 #         logger.error("Serializer errors: %s", serializer.errors)
 #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+from rest_framework import permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Candidate, CandidateDocument
+from .serializers import CandidateSerializer
+import logging
+import os
+import uuid
+from django.core.files.storage import default_storage
+
+logger = logging.getLogger(__name__)
+
 class OnboardingListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -1111,37 +1120,25 @@ class OnboardingListView(APIView):
         logger.info("Received POST request with data keys: %s", list(request.data.keys()))
         logger.info("Received FILES: %s", list(request.FILES.keys()))
 
-        # ✅ Fix: Don't use copy() which tries to deepcopy file objects
-        data = request.data.dict()
-        file_paths = []
-
         upload_documents = request.FILES.getlist('upload_documents')
-        logger.info("Files in upload_documents: %s", [f.name for f in upload_documents])
+        data = request.data.dict() if hasattr(request.data, 'dict') else request.data
 
-        try:
-            for file in upload_documents:
-                file_name, file_ext = os.path.splitext(default_storage.get_valid_name(file.name))
-                unique_name = f"{file_name}_{uuid.uuid4().hex[:8]}{file_ext}"
-                save_path = os.path.join('documents', unique_name)
-                saved_path = default_storage.save(save_path, file)
-                logger.info("Saved file: %s", saved_path)
-                file_paths.append(saved_path)
-        except Exception as e:
-            logger.error("Error processing files: %s", str(e))
-            return Response(
-                {'error': f'Failed to process uploaded files: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Prepare document data for serializer
+        documents_data = []
+        for file in upload_documents:
+            file_name, file_ext = os.path.splitext(file.name)
+            unique_name = f"{file_name}_{uuid.uuid4().hex[:8]}{file_ext}"
+            save_path = os.path.join('candidate_documents', unique_name)
+            saved_path = default_storage.save(save_path, file)
+            documents_data.append({'file': saved_path})
 
-        data['upload_documents'] = ','.join(file_paths) if file_paths else ''
-        logger.info("Data before serialization: %s", data)
-
+        data['upload_documents'] = documents_data
         serializer = CandidateSerializer(data=data)
         if serializer.is_valid():
             candidate = serializer.save()
-            logger.info("Candidate saved successfully with upload_documents: %s", candidate.upload_documents)
+            logger.info("Candidate saved successfully with %d documents", len(candidate.upload_documents.all()))
             return Response(
-                {'message': 'Data submitted successfully', 'data': serializer.data},
+                {'message': 'Data submitted successfully', 'data': CandidateSerializer(candidate).data},
                 status=status.HTTP_201_CREATED
             )
         logger.error("Serializer errors: %s", serializer.errors)
@@ -1163,10 +1160,24 @@ class OnboardingDetailView(APIView):
             return Response({'error': 'Only super admins can edit candidates'}, status=status.HTTP_403_FORBIDDEN)
         try:
             candidate = Candidate.objects.get(pk=pk)
-            serializer = CandidateSerializer(candidate, data=request.data, partial=True)
+            upload_documents = request.FILES.getlist('upload_documents')
+            data = request.data.dict() if hasattr(request.data, 'dict') else request.data
+
+            # Prepare new document data
+            documents_data = []
+            for file in upload_documents:
+                file_name, file_ext = os.path.splitext(file.name)
+                unique_name = f"{file_name}_{uuid.uuid4().hex[:8]}{file_ext}"
+                save_path = os.path.join('Candidate_documents', unique_name)
+                saved_path = default_storage.save(save_path, file)
+                documents_data.append({'file': saved_path})
+
+            data['upload_documents'] = documents_data
+            serializer = CandidateSerializer(candidate, data=data, partial=True)
             if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                candidate = serializer.save()
+                logger.info("Candidate updated with %d documents", len(candidate.upload_documents.all()))
+                return Response(CandidateSerializer(candidate).data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Candidate.DoesNotExist:
             return Response({'error': 'Candidate not found'}, status=status.HTTP_404_NOT_FOUND)

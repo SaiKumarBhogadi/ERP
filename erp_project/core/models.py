@@ -192,6 +192,21 @@ class Product(models.Model):
 
 
 
+from django.db import models
+from django.db.models import JSONField
+import re
+
+class CandidateDocument(models.Model):
+    file = models.FileField(upload_to='Candidate_documents/%Y/%m/%d/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"CandidateDocument - {self.file.name}"
+
+    class Meta:
+        verbose_name = "Document"
+        verbose_name_plural = "Documents"
+
 class Candidate(models.Model):
     employee_code = models.CharField(max_length=10, unique=True, editable=False)
     first_name = models.CharField(max_length=100)
@@ -201,11 +216,11 @@ class Candidate(models.Model):
     designation = models.ForeignKey('Role', on_delete=models.SET_NULL, null=True, blank=True, related_name='candidate_designations')
     gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female')])
     joining_date = models.DateField(null=True, blank=True)
-    personal_number = models.CharField(max_length=15, blank=True)
+    personal_number = models.CharField(max_length=15)
     emergency_contact_number = models.CharField(max_length=15, blank=True)
     email = models.EmailField(unique=True)
-    aadhar_number = models.CharField(max_length=14, blank=True)
-    pan_number = models.CharField(max_length=10, blank=True)
+    aadhar_number = models.CharField(max_length=14)
+    pan_number = models.CharField(max_length=10)
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
     current_address = models.TextField(blank=True)
     highest_qualification = models.CharField(max_length=200, blank=True)
@@ -232,10 +247,10 @@ class Candidate(models.Model):
     account_number = models.CharField(max_length=20, blank=True)
     ifsc_code = models.CharField(max_length=11, blank=True)
     asset = models.CharField(max_length=3, choices=[('Y', 'Yes'), ('N', 'No')], blank=True)
-    asset_type = models.CharField(max_length=50, blank=True)
-    laptop_company_name = models.CharField(max_length=50, blank=True)
+    asset_type = models.CharField(max_length=50, choices=[('laptop', 'Laptop'), ('phone', 'Phone')], blank=True)
+    laptop_company_name = models.CharField(max_length=50, choices=[('HP', 'HP'), ('Dell', 'Dell'), ('Lenovo', 'Lenovo')], blank=True)
     asset_id = models.CharField(max_length=20, blank=True)
-    upload_documents = models.TextField(blank=True, null=True)  # Changed from JSONField to TextField
+    upload_documents = models.ManyToManyField(CandidateDocument, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.employee_code:
@@ -246,11 +261,38 @@ class Candidate(models.Model):
             else:
                 new_num = 1
             self.employee_code = f'STA{new_num:04d}'
+
+        # Validate phone numbers
+        phone_regex = r'^[0-9+\-\s]+$'
+        if self.personal_number and not re.match(phone_regex, self.personal_number):
+            raise ValueError("Personal number must contain only digits, +, -, or spaces.")
+        if self.emergency_contact_number and not re.match(phone_regex, self.emergency_contact_number):
+            raise ValueError("Emergency contact number must contain only digits, +, -, or spaces.")
+
+        # Validate Aadhar number
+        aadhar_regex = r'^\d{4}\s?\d{4}\s?\d{4}$'
+        if not re.match(aadhar_regex, self.aadhar_number):
+            raise ValueError("Aadhar number must be 12 digits, optionally with spaces.")
+
+        # Validate PAN number
+        pan_regex = r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$'
+        if not re.match(pan_regex, self.pan_number):
+            raise ValueError("PAN number must be 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F).")
+
+        # Validate account number
+        if self.account_number and not self.account_number.isdigit():
+            raise ValueError("Account number must contain only digits.")
+
+        # Validate asset-related fields
+        if self.asset == 'Y' and not self.asset_type:
+            raise ValueError("Asset type is required when asset is Yes.")
+        if self.asset_type == 'laptop' and not self.laptop_company_name:
+            raise ValueError("Laptop company name is required when asset type is laptop.")
+
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.employee_code} - {self.first_name} {self.last_name}"
-    
 
 
 
