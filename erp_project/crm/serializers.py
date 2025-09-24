@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Enquiry, EnquiryItem
+from core.models import Candidate
 
 class EnquiryItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -167,21 +168,22 @@ class QuotationCreateSerializer(serializers.ModelSerializer):
     
 
 from rest_framework import serializers
-from .models import SalesOrder, SalesOrderItem, SalesOrderComment, SalesOrderHistory
-from core.serializers import CustomerSerializer, ProductSerializer, UOMSerializer, TaxCodeSerializer
+from .models import SalesOrder, SalesOrderItem, SalesOrderComment, SalesOrderHistory, DeliveryNote, DeliveryNoteItem, DeliveryNoteCustomerAcknowledgement, DeliveryNoteAttachment, DeliveryNoteRemark, Invoice, InvoiceItem, InvoiceAttachment, InvoiceRemark, OrderSummary
+from core.serializers import CustomerSerializer, ProductSerializer
+from purchase.serializers import SerialNumberSerializer
 
+# Existing SalesOrder serializers
 class SalesOrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
-    uom = UOMSerializer()
-    tax = TaxCodeSerializer()
 
     class Meta:
         model = SalesOrderItem
-        fields = ['id', 'product', 'uom', 'tax', 'quantity', 'unit_price', 'discount', 'total']
+        fields = ['id', 'product', 'quantity', 'uom', 'unit_price', 'discount', 'total']
 
 class SalesOrderCreateSerializer(serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(queryset=Customer.objects.all())
-    sales_rep = serializers.PrimaryKeyRelatedField(queryset=Role.objects.filter(role ='Sales Representative'), allow_null=True)
+    sales_rep = serializers.PrimaryKeyRelatedField(queryset=Candidate.objects.filter(designation__role="Sales Representative"),
+        allow_null=True)
 
     class Meta:
         model = SalesOrder
@@ -189,7 +191,7 @@ class SalesOrderCreateSerializer(serializers.ModelSerializer):
 
 class SalesOrderSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer()
-    sales_rep = serializers.CharField(source='sales_rep.role')
+    sales_rep = serializers.CharField(source='sales_rep.username')
     items = SalesOrderItemSerializer(many=True, required=False)
     comments = serializers.SerializerMethodField()
     history = serializers.SerializerMethodField()
@@ -199,10 +201,10 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'sales_order_id', 'order_date', 'sales_rep', 'order_type', 'customer', 'payment_method', 'currency', 'due_date', 'terms_conditions', 'shipping_method', 'expected_delivery', 'tracking_number', 'internal_notes', 'customer_notes', 'global_discount', 'shipping_charges', 'status', 'items', 'comments', 'history']
 
     def get_comments(self, obj):
-        return SalesOrderCommentSerializer(obj.comments.all(), many=True).data
+        return [{'id': c.id, 'user': c.user.username, 'comment': c.comment, 'timestamp': c.timestamp} for c in obj.comments.all()]
 
     def get_history(self, obj):
-        return SalesOrderHistorySerializer(obj.history.all(), many=True).data
+        return [{'id': h.id, 'user': h.user.username, 'action': h.action, 'timestamp': h.timestamp} for h in obj.history.all()]
 
 class SalesOrderCommentSerializer(serializers.ModelSerializer):
     user = serializers.CharField(source='user.username')
@@ -217,3 +219,143 @@ class SalesOrderHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesOrderHistory
         fields = ['id', 'user', 'action', 'timestamp']
+
+# Existing DeliveryNote serializers
+class DeliveryNoteAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteAttachment
+        fields = ['id', 'file']
+
+class DeliveryNoteRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteRemark
+        fields = ['id', 'text', 'created_by', 'timestamp']
+
+class DeliveryNoteItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+    serial_numbers = SerialNumberSerializer(many=True, required=False)
+
+    class Meta:
+        model = DeliveryNoteItem
+        fields = ['id', 'product', 'quantity', 'uom', 'serial_numbers']
+
+    def validate(self, data):
+        if data.get('product'):
+            data['product_id'] = data['product'].product_id
+            data['uom'] = data['product'].uom
+        return data
+
+class DeliveryNoteCustomerAcknowledgementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteCustomerAcknowledgement
+        fields = ['id', 'received_by', 'contact_number', 'proof_of_delivery']
+
+class DeliveryNoteSerializer(serializers.ModelSerializer):
+    items = DeliveryNoteItemSerializer(many=True, required=False)
+    attachments = DeliveryNoteAttachmentSerializer(many=True, required=False)
+    remarks = DeliveryNoteRemarkSerializer(many=True, required=False)
+    acknowledgement = DeliveryNoteCustomerAcknowledgementSerializer(required=False)
+
+    class Meta:
+        model = DeliveryNote
+        fields = ['id', 'DN_ID', 'delivery_date', 'sales_order_reference', 'customer_name', 'delivery_type', 'destination_address', 'delivery_status', 'partially_delivered', 'items', 'attachments', 'remarks', 'acknowledgement']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        acknowledgement_data = validated_data.pop('acknowledgement', None)
+        delivery_note = DeliveryNote.objects.create(**validated_data)
+        for item_data in items_data:
+            item = DeliveryNoteItemSerializer().create(item_data)
+            delivery_note.items.add(item)
+        for attachment_data in attachments_data:
+            DeliveryNoteAttachment.objects.create(delivery_note=delivery_note, **attachment_data)
+        for remark_data in remarks_data:
+            DeliveryNoteRemark.objects.create(delivery_note=delivery_note, **remark_data)
+        if acknowledgement_data:
+            DeliveryNoteCustomerAcknowledgement.objects.create(delivery_note=delivery_note, **acknowledgement_data)
+        return delivery_note
+
+# New Invoice serializers
+class InvoiceAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceAttachment
+        fields = ['id', 'file']
+
+class InvoiceRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceRemark
+        fields = ['id', 'text', 'created_by', 'timestamp']
+
+class InvoiceItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+
+    class Meta:
+        model = InvoiceItem
+        fields = ['id', 'product',  'quantity', 'returned_qty', 'uom', 'unit_price', 'tax', 'discount', 'total']
+
+    def validate(self, data):
+        if data.get('product'):
+            data['product_id'] = data['product'].product_id
+            data['uom'] = data['product'].uom
+            data['unit_price'] = data['product'].unit_price or 0.00
+            data['tax'] = data['product'].tax or 0.00
+            data['discount'] = data['product'].discount or 0.00
+        return data
+
+class OrderSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderSummary
+        fields = ['id', 'subtotal', 'global_discount', 'tax_summary', 'shipping_charges', 'rounding_adjustment', 'credit_note_applied', 'amount_paid', 'grand_total', 'balance_due']
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    items = InvoiceItemSerializer(many=True, required=False)
+    attachments = InvoiceAttachmentSerializer(many=True, required=False)
+    remarks = InvoiceRemarkSerializer(many=True, required=False)
+    summary = OrderSummarySerializer(required=False)
+
+    class Meta:
+        model = Invoice
+        fields = ['id', 'INVOICE_ID', 'invoice_date', 'due_date', 'sales_order_reference', 'customer', 'customer_ref_no', 'invoice_tags', 'terms_conditions', 'invoice_status', 'payment_terms', 'billing_address', 'shipping_address', 'email_id', 'phone_number', 'contact_person', 'payment_method', 'currency', 'payment_ref_number', 'transaction_date', 'payment_status', 'invoice_total', 'items', 'attachments', 'remarks', 'summary']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        summary_data = validated_data.pop('summary', None)
+        invoice = Invoice.objects.create(**validated_data)
+        for item_data in items_data:
+            item = InvoiceItemSerializer().create(item_data)
+            invoice.items.add(item)
+        for attachment_data in attachments_data:
+            InvoiceAttachment.objects.create(invoice=invoice, **attachment_data)
+        for remark_data in remarks_data:
+            InvoiceRemark.objects.create(invoice=invoice, **remark_data)
+        if summary_data:
+            OrderSummary.objects.create(invoice=invoice, **summary_data)
+        return invoice
+
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', None)
+        attachments_data = validated_data.pop('attachments', None)
+        remarks_data = validated_data.pop('remarks', None)
+        summary_data = validated_data.pop('summary', None)
+        instance = super().update(instance, validated_data)
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                item = InvoiceItemSerializer().create(item_data)
+                instance.items.add(item)
+        if attachments_data is not None:
+            instance.attachments.all().delete()
+            for attachment_data in attachments_data:
+                InvoiceAttachment.objects.create(invoice=instance, **attachment_data)
+        if remarks_data is not None:
+            instance.remarks.all().delete()
+            for remark_data in remarks_data:
+                InvoiceRemark.objects.create(invoice=instance, **remark_data)
+        if summary_data is not None:
+            instance.summary.delete()
+            OrderSummary.objects.create(invoice=instance, **summary_data)
+        return instance

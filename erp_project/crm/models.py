@@ -142,11 +142,13 @@ class QuotationRevision(models.Model):
     
 
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-from core.models import Customer, Product, Role, UOM, TaxCode
+from django.contrib.auth import get_user_model
+from core.models import Customer, Product, Branch
+from purchase.models import SerialNumber
 
 User = get_user_model()
+
 
 class SalesOrder(models.Model):
     SALES_STATUS_CHOICES = [
@@ -157,7 +159,7 @@ class SalesOrder(models.Model):
     ]
     sales_order_id = models.CharField(max_length=50, unique=True, editable=False)
     order_date = models.DateField(default=timezone.now)
-    sales_rep = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, limit_choices_to={'role': 'Sales Representative'})
+    sales_rep = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, limit_choices_to={'role__role': 'Sales Representative'})
     order_type = models.CharField(max_length=50, choices=[('Standard', 'Standard'), ('Rush', 'Rush'), ('Backorder', 'Backorder')])
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     payment_method = models.CharField(max_length=50, blank=True)
@@ -178,22 +180,14 @@ class SalesOrder(models.Model):
     def save(self, *args, **kwargs):
         if not self.sales_order_id:
             last_order = SalesOrder.objects.order_by('id').last()
-            if last_order:
-                last_num = int(last_order.sales_order_id.replace('SO', ''))
-                new_num = last_num + 1
-            else:
-                new_num = 1
+            new_num = last_order.id + 1 if last_order else 1
             self.sales_order_id = f'SO{new_num:04d}'
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Sales Order {self.sales_order_id}"
 
 class SalesOrderItem(models.Model):
     sales_order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    uom = models.ForeignKey(UOM, on_delete=models.SET_NULL, null=True)
-    tax = models.ForeignKey(TaxCode, on_delete=models.SET_NULL, null=True)
+    uom = models.CharField(max_length=50, blank=True)
     quantity = models.IntegerField(default=0)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -201,14 +195,9 @@ class SalesOrderItem(models.Model):
 
     def save(self, *args, **kwargs):
         subtotal = self.quantity * self.unit_price
-        tax_amount = (subtotal * self.tax.percentage) / 100 if self.tax else 0
-        taxed_amount = subtotal + tax_amount
-        discount_amount = (taxed_amount * self.discount) / 100
-        self.total = taxed_amount - discount_amount
+        discount_amount = (subtotal * self.discount) / 100
+        self.total = subtotal - discount_amount
         super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.product.name} - {self.sales_order.sales_order_id}"
 
 class SalesOrderComment(models.Model):
     sales_order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name='comments')
@@ -216,14 +205,139 @@ class SalesOrderComment(models.Model):
     comment = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
 
-    def __str__(self):  
-        return f"Comment by {self.user.username} on {self.sales_order.sales_order_id}"
-
 class SalesOrderHistory(models.Model):
     sales_order = models.ForeignKey(SalesOrder, on_delete=models.CASCADE, related_name='history')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=100)
     timestamp = models.DateTimeField(default=timezone.now)
 
-    def __str__(self):
-        return f"{self.action} by {self.user.username} on {self.sales_order.sales_order_id}"
+def generate_dn_id():
+    last_dn = DeliveryNote.objects.order_by('-id').first()
+    new_id = f'DN-{str(last_dn.id + 1).zfill(4) if last_dn else "0001"}' if last_dn else "DN-0001"
+    return new_id
+
+class DeliveryNoteAttachment(models.Model):
+    delivery_note = models.ForeignKey('DeliveryNote', on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='delivery_note_attachments/', blank=True, null=True)
+
+class DeliveryNoteRemark(models.Model):
+    delivery_note = models.ForeignKey('DeliveryNote', on_delete=models.CASCADE, related_name='remarks')
+    text = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class DeliveryNote(models.Model):
+    DN_ID = models.CharField(max_length=20, unique=True, editable=False, default=generate_dn_id)
+    delivery_date = models.DateField(default=timezone.now)
+    sales_order_reference = models.ForeignKey(SalesOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_name = models.CharField(max_length=100, blank=True)
+    delivery_type = models.CharField(max_length=20, choices=[('Regular', 'Regular'), ('Urgent', 'Urgent'), ('Return', 'Return')], default='Regular')
+    destination_address = models.TextField(blank=True)
+    delivery_status = models.CharField(max_length=20, choices=[('Draft', 'Draft'), ('Partially Delivered', 'Partially Delivered'), ('Delivered', 'Delivered'), ('Returned', 'Returned'), ('Cancelled', 'Cancelled')], default='Draft')
+    partially_delivered = models.BooleanField(default=False)
+
+class DeliveryNoteItem(models.Model):
+    delivery_note = models.ForeignKey(DeliveryNote, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+   
+    quantity = models.IntegerField(default=0)
+    uom = models.CharField(max_length=50, blank=True)
+    serial_numbers = models.ManyToManyField(SerialNumber, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.product:
+            self.product_id = self.product.product_id
+            self.uom = self.product.uom
+        super().save(*args, **kwargs)
+
+class DeliveryNoteCustomerAcknowledgement(models.Model):
+    delivery_note = models.OneToOneField(DeliveryNote, on_delete=models.CASCADE, related_name='acknowledgement')
+    received_by = models.CharField(max_length=100, blank=True)
+    contact_number = models.CharField(max_length=15, blank=True)
+    proof_of_delivery = models.FileField(upload_to='delivery_proof/', blank=True, null=True)
+
+# New Invoice models
+def generate_invoice_id():
+    last_invoice = Invoice.objects.order_by('-id').first()
+    new_id = f'INV-{str(last_invoice.id + 1).zfill(4) if last_invoice else "0001"}' if last_invoice else "INV-0001"
+    return new_id
+
+class InvoiceAttachment(models.Model):
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='invoice_attachments/', blank=True, null=True)
+
+class InvoiceRemark(models.Model):
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name='remarks')
+    text = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class Invoice(models.Model):
+    INVOICE_ID = models.CharField(max_length=20, unique=True, editable=False, default=generate_invoice_id)
+    invoice_date = models.DateField(default=timezone.now)
+    due_date = models.DateField(blank=True, null=True)
+    sales_order_reference = models.ForeignKey(SalesOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_ref_no = models.CharField(max_length=50, blank=True)
+    invoice_tags = models.CharField(max_length=100, blank=True)  # Store as comma-separated for multi-select
+    terms_conditions = models.TextField(blank=True)
+    invoice_status = models.CharField(max_length=20, choices=[('Draft', 'Draft'), ('Sent', 'Sent'), ('Paid', 'Paid'), ('Overdue', 'Overdue'), ('Cancelled', 'Cancelled')], default='Draft')
+    payment_terms = models.CharField(max_length=20, choices=[('Net 15', 'Net 15'), ('Net 20', 'Net 20'), ('Net 45', 'Net 45'), ('Due on Receipt', 'Due on Receipt')], default='Net 30')
+    billing_address = models.TextField(blank=True)
+    shipping_address = models.TextField(blank=True)
+    email_id = models.EmailField(blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    contact_person = models.CharField(max_length=100, blank=True)
+    payment_method = models.CharField(max_length=20, choices=[('Credit Card', 'Credit Card'), ('Bank Transfer', 'Bank Transfer'), ('COD', 'COD'), ('PayPal', 'PayPal')], blank=True)
+    currency = models.CharField(max_length=3, choices=[('USD', 'USD'), ('EUR', 'EUR'), ('INR', 'INR'), ('GBP', 'GBP'), ('SGD', 'SGD')], default='INR')
+    payment_ref_number = models.CharField(max_length=50, blank=True)
+    transaction_date = models.DateField(blank=True, null=True)
+    payment_status = models.CharField(max_length=20, choices=[('Paid', 'Paid'), ('Partial', 'Partial'), ('Unpaid', 'Unpaid')], default='Unpaid')
+    invoice_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_total:
+            self.invoice_total = sum(item.total for item in self.items.all()) or 0
+        super().save(*args, **kwargs)
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    quantity = models.IntegerField(default=0)
+    returned_qty = models.IntegerField(default=0)
+    uom = models.CharField(max_length=50, blank=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if self.product:
+            self.product_id = self.product.product_id
+            self.uom = self.product.uom
+            self.unit_price = self.product.unit_price or 0.00
+            self.tax = self.product.tax or 0.00
+            self.discount = self.product.discount or 0.00
+        self.total = self.quantity * self.unit_price * (1 - self.discount / 100) * (1 + self.tax / 100)
+        super().save(*args, **kwargs)
+
+class OrderSummary(models.Model):
+    invoice = models.OneToOneField(Invoice, on_delete=models.CASCADE, related_name='summary')
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    global_discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    tax_summary = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    shipping_charges = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    rounding_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    credit_note_applied = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    balance_due = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        invoice = self.invoice
+        self.subtotal = sum(item.total for item in invoice.items.all())
+        self.tax_summary = sum(item.tax * item.total / 100 for item in invoice.items.all())
+        self.grand_total = self.subtotal - (self.subtotal * self.global_discount / 100) + self.tax_summary + self.shipping_charges + self.rounding_adjustment - self.credit_note_applied
+        self.balance_due = self.grand_total - self.amount_paid
+        super().save(*args, **kwargs)

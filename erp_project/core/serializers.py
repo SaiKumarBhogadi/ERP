@@ -11,7 +11,7 @@ class DepartmentDropdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = Department
         fields = ['id', 'department_name']
-
+    
 class DepartmentSerializer(serializers.ModelSerializer):
     branch = BranchSerializer(read_only=True)
     roles = serializers.SerializerMethodField()

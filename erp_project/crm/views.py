@@ -305,8 +305,8 @@ class QuotationEmailView(APIView):
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import SalesOrder, SalesOrderItem, SalesOrderComment, SalesOrderHistory
-from .serializers import SalesOrderSerializer, SalesOrderCreateSerializer, SalesOrderCommentSerializer, SalesOrderHistorySerializer
+from .models import SalesOrder, SalesOrderItem, SalesOrderComment, SalesOrderHistory, DeliveryNote, DeliveryNoteItem, DeliveryNoteCustomerAcknowledgement, DeliveryNoteAttachment, DeliveryNoteRemark, Invoice, InvoiceItem, InvoiceAttachment, InvoiceRemark, OrderSummary
+from .serializers import SalesOrderSerializer, SalesOrderCreateSerializer, SalesOrderCommentSerializer, SalesOrderHistorySerializer, DeliveryNoteSerializer, DeliveryNoteItemSerializer, DeliveryNoteCustomerAcknowledgementSerializer, DeliveryNoteAttachmentSerializer, DeliveryNoteRemarkSerializer, InvoiceSerializer, InvoiceItemSerializer, OrderSummarySerializer
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from reportlab.lib import colors
@@ -315,12 +315,14 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 import io
+from django.utils import timezone
 
+# Existing SalesOrder views
 class SalesOrderListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        sales_orders = SalesOrder.objects.filter(sales_rep__in=[request.user.profile.role]).order_by('-created_at')
+        sales_orders = SalesOrder.objects.filter(sales_rep=request.user).order_by('-created_at')
         serializer = SalesOrderSerializer(sales_orders, many=True)
         return Response(serializer.data)
 
@@ -333,7 +335,7 @@ class SalesOrderListView(APIView):
 
     def delete(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             sales_order.delete()
             return Response({'message': 'Sales Order deleted successfully'}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
@@ -344,7 +346,7 @@ class SalesOrderDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             serializer = SalesOrderSerializer(sales_order)
             return Response(serializer.data)
         except ObjectDoesNotExist:
@@ -352,7 +354,7 @@ class SalesOrderDetailView(APIView):
 
     def put(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             action = request.data.get('action')
             if action == 'save_draft':
                 sales_order.status = 'Draft'
@@ -362,6 +364,10 @@ class SalesOrderDetailView(APIView):
                 sales_order.status = 'Submitted(PD)'
             elif action == 'cancel':
                 sales_order.status = 'Cancelled'
+            elif action == 'convert_to_delivery':
+                return Response(self.convert_to_delivery_note(sales_order))
+            elif action == 'convert_to_invoice':
+                return Response(self.convert_to_invoice(sales_order))
             else:
                 serializer = SalesOrderCreateSerializer(sales_order, data=request.data, partial=True, context={'request': request})
                 if serializer.is_valid():
@@ -374,16 +380,69 @@ class SalesOrderDetailView(APIView):
         except ObjectDoesNotExist:
             return Response({'error': 'Sales Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    def convert_to_delivery_note(self, sales_order):
+        delivery_data = {
+            'delivery_date': timezone.now().date(),
+            'sales_order_reference': sales_order.id,
+            'customer_name': sales_order.customer.name,
+            'delivery_type': 'Regular',
+            'destination_address': sales_order.customer.address,
+            'delivery_status': 'Draft',
+        }
+        serializer = DeliveryNoteSerializer(data=delivery_data)
+        if serializer.is_valid():
+            delivery_note = serializer.save()
+            for item in sales_order.items.all():
+                item_data = {
+                    'product': item.product.id,
+                    'quantity': item.quantity,
+                }
+                item_serializer = DeliveryNoteItemSerializer(data=item_data)
+                if item_serializer.is_valid():
+                    delivery_item = item_serializer.save()
+                    delivery_note.items.add(delivery_item)
+            return DeliveryNoteSerializer(delivery_note).data
+        return serializer.errors
+
+    def convert_to_invoice(self, sales_order):
+        invoice_data = {
+            'invoice_date': timezone.now().date(),
+            'due_date': timezone.now().date() + timezone.timedelta(days=30),
+            'sales_order_reference': sales_order.id,
+            'customer': sales_order.customer.id,
+            'billing_address': sales_order.customer.address,
+            'shipping_address': sales_order.customer.address,
+            'email_id': sales_order.customer.email,
+            'phone_number': sales_order.customer.phone_number,
+            'payment_terms': 'Net 30',
+            'currency': sales_order.currency,
+        }
+        serializer = InvoiceSerializer(data=invoice_data)
+        if serializer.is_valid():
+            invoice = serializer.save()
+            for item in sales_order.items.all():
+                item_data = {
+                    'product': item.product.id,
+                    'quantity': item.quantity,
+                    'unit_price': item.unit_price,
+                    'discount': item.discount,
+                }
+                item_serializer = InvoiceItemSerializer(data=item_data)
+                if item_serializer.is_valid():
+                    invoice_item = item_serializer.save()
+                    invoice.items.add(invoice_item)
+            summary_data = {'invoice': invoice.id, 'subtotal': sum(i.total for i in invoice.items.all())}
+            OrderSummarySerializer().create(summary_data)
+            return InvoiceSerializer(invoice).data
+        return serializer.errors
+
 class SalesOrderCommentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
-            comment_data = {
-                'user': request.user,
-                'comment': request.data.get('comment'),
-            }
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
+            comment_data = {'user': request.user, 'comment': request.data.get('comment')}
             comment = SalesOrderComment.objects.create(sales_order=sales_order, **comment_data)
             serializer = SalesOrderCommentSerializer(comment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -392,7 +451,7 @@ class SalesOrderCommentView(APIView):
 
     def get(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             comments = sales_order.comments.all()
             serializer = SalesOrderCommentSerializer(comments, many=True)
             return Response(serializer.data)
@@ -404,23 +463,10 @@ class SalesOrderHistoryView(APIView):
 
     def get(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             history = sales_order.history.all()
             serializer = SalesOrderHistorySerializer(history, many=True)
             return Response(serializer.data)
-        except ObjectDoesNotExist:
-            return Response({'error': 'Sales Order not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    def post(self, request, pk):
-        try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
-            history_data = {
-                'user': request.user,
-                'action': request.data.get('action'),
-            }
-            history = SalesOrderHistory.objects.create(sales_order=sales_order, **history_data)
-            serializer = SalesOrderHistorySerializer(history)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ObjectDoesNotExist:
             return Response({'error': 'Sales Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -429,72 +475,311 @@ class SalesOrderPDFView(APIView):
 
     def get(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
-            serializer = SalesOrderSerializer(sales_order)
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             buffer = io.BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=letter)
-            elements = []
-
-            data = [
-                ['Sales Order ID', sales_order.sales_order_id],
-                ['Order Date', sales_order.order_date.strftime('%Y-%m-%d')],
-                ['Customer', f"{sales_order.customer.first_name} {sales_order.customer.last_name}"],
-                ['Total', f"{sales_order.currency} {sum(item.total for item in sales_order.items.all())}"],
+            elements = [
+                Paragraph(f"Sales Order ID: {sales_order.sales_order_id}", style={'fontName': 'Helvetica-Bold', 'fontSize': 14}),
+                Paragraph(f"Date: {sales_order.order_date}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+                Paragraph(f"Customer: {sales_order.customer.name}", style={'fontName': 'Helvetica', 'fontSize': 12}),
             ]
-            table = Table(data)
-            table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 14),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 1), (-1, -1), 12),
-            ]))
-            elements.append(table)
-            elements.append(Spacer(1, 12))
-
             doc.build(elements)
             buffer.seek(0)
-            return HttpResponse(buffer, content_type='application/pdf')
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="sales_order_{sales_order.sales_order_id}.pdf"'
+            return response
         except ObjectDoesNotExist:
             return Response({'error': 'Sales Order not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': f'PDF generation failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SalesOrderEmailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
         try:
-            sales_order = SalesOrder.objects.get(id=pk, sales_rep__in=[request.user.profile.role])
+            sales_order = SalesOrder.objects.get(id=pk, sales_rep=request.user)
             email = request.data.get('email')
-            html_content = request.data.get('html_content', """
-                <html>
-                    <body>
-                        <h2>Sales Order Details</h2>
-                        <p><strong>Sales Order ID:</strong> {sales_order.sales_order_id}</p>
-                        <p><strong>Customer:</strong> {sales_order.customer.first_name} {sales_order.customer.last_name}</p>
-                        <p><strong>Date:</strong> {sales_order.order_date}</p>
-                        <p><strong>Total:</strong> {sales_order.currency} {sum(item.total for item in sales_order.items.all())}</p>
-                        <p>Thank you for your business!</p>
-                    </body>
-                </html>
-            """.format(sales_order=sales_order))
-
             if not email:
                 return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
-
             subject = f'Sales Order {sales_order.sales_order_id}'
-            msg = EmailMessage(subject, html_content, to=[email])
+            html_message = render_to_string('sales_order_email_template.html', {'sales_order': sales_order})
+            msg = EmailMessage(subject, html_message, to=[email])
             msg.content_subtype = 'html'
             msg.send()
             return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response({'error': 'Sales Order not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Existing DeliveryNote views
+class DeliveryNoteListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        delivery_notes = DeliveryNote.objects.all().order_by('-delivery_date')
+        serializer = DeliveryNoteSerializer(delivery_notes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = DeliveryNoteSerializer(data=request.data)
+        if serializer.is_valid():
+            delivery_note = serializer.save()
+            return Response(DeliveryNoteSerializer(delivery_note).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class DeliveryNoteDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            delivery_note = DeliveryNote.objects.get(id=pk)
+            serializer = DeliveryNoteSerializer(delivery_note)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        try:
+            delivery_note = DeliveryNote.objects.get(id=pk)
+            action = request.data.get('action')
+            if action == 'cancel_dn':
+                delivery_note.delete()
+            elif action == 'cancel':
+                delivery_note.delivery_status = 'Cancelled'
+            elif action == 'save_draft':
+                delivery_note.delivery_status = 'Draft'
+            elif action == 'convert_to_invoice':
+                return Response(self.convert_to_invoice_from_delivery(delivery_note))
+            else:
+                serializer = DeliveryNoteSerializer(delivery_note, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(DeliveryNoteSerializer(delivery_note).data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            delivery_note.save()
+            return Response(DeliveryNoteSerializer(delivery_note).data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def convert_to_invoice_from_delivery(self, delivery_note):
+        invoice_data = {
+            'invoice_date': timezone.now().date(),
+            'due_date': timezone.now().date() + timezone.timedelta(days=30),
+            'sales_order_reference': delivery_note.sales_order_reference.id,
+            'customer': delivery_note.sales_order_reference.customer.id,
+            'billing_address': delivery_note.sales_order_reference.customer.address,
+            'shipping_address': delivery_note.destination_address,
+            'email_id': delivery_note.sales_order_reference.customer.email,
+            'phone_number': delivery_note.sales_order_reference.customer.phone_number,
+            'payment_terms': 'Net 30',
+            'currency': delivery_note.sales_order_reference.currency,
+        }
+        serializer = InvoiceSerializer(data=invoice_data)
+        if serializer.is_valid():
+            invoice = serializer.save()
+            for item in delivery_note.items.all():
+                item_data = {
+                    'product': item.product.id,
+                    'quantity': item.quantity,
+                    'unit_price': item.product.unit_price or 0.00,
+                    'discount': item.product.discount or 0.00,
+                }
+                item_serializer = InvoiceItemSerializer(data=item_data)
+                if item_serializer.is_valid():
+                    invoice_item = item_serializer.save()
+                    invoice.items.add(invoice_item)
+            summary_data = {'invoice': invoice.id, 'subtotal': sum(i.total for i in invoice.items.all())}
+            OrderSummarySerializer().create(summary_data)
+            return InvoiceSerializer(invoice).data
+        return serializer.errors
+
+class DeliveryNoteItemView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            delivery_note = DeliveryNote.objects.get(id=pk)
+            item_data = request.data
+            item_data['delivery_note'] = pk
+            serializer = DeliveryNoteItemSerializer(data=item_data)
+            if serializer.is_valid():
+                item = serializer.save()
+                delivery_note.items.add(item)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note not found'}, status=status.HTTP_404_NOT_FOUND)
+
+from purchase.models import SerialNumber
+from purchase.serializers import SerialNumber,SerialNumberSerializer
+class DeliveryNoteSerialNumbersView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk, item_pk):
+        try:
+            delivery_note_item = DeliveryNoteItem.objects.get(id=item_pk, delivery_note_id=pk)
+            available_serials = SerialNumber.objects.filter(product=delivery_note_item.product).exclude(
+                id__in=delivery_note_item.serial_numbers.values('id')
+            )[:delivery_note_item.quantity - delivery_note_item.serial_numbers.count()]
+            serializer = SerialNumberSerializer(available_serials, many=True)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Item or Serial Numbers not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, pk, item_pk):
+        try:
+            delivery_note_item = DeliveryNoteItem.objects.get(id=item_pk, delivery_note_id=pk)
+            serial_ids = request.data.get('serial_numbers', [])
+            if len(serial_ids) <= delivery_note_item.quantity - delivery_note_item.serial_numbers.count():
+                delivery_note_item.serial_numbers.add(*serial_ids)
+                return Response({'message': 'Serial numbers added'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Exceeds quantity limit'}, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeliveryNotePDFView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            delivery_note = DeliveryNote.objects.get(id=pk)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = [
+                Paragraph(f"DN ID: {delivery_note.DN_ID}", style={'fontName': 'Helvetica-Bold', 'fontSize': 14}),
+                Paragraph(f"Date: {delivery_note.delivery_date}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+                Paragraph(f"Customer: {delivery_note.customer_name}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+            ]
+            doc.build(elements)
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="delivery_note_{delivery_note.DN_ID}.pdf"'
+            return response
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeliveryNoteEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            delivery_note = DeliveryNote.objects.get(id=pk)
+            email = request.data.get('email')
+            if not email:
+                return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            subject = f'Delivery Note {delivery_note.DN_ID}'
+            html_message = render_to_string('delivery_note_email_template.html', {'delivery_note': delivery_note})
+            msg = EmailMessage(subject, html_message, to=[email])
+            msg.content_subtype = 'html'
+            msg.send()
+            return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note not found'}, status=status.HTTP_404_NOT_FOUND)
+
+# New Invoice views
+class InvoiceListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        invoices = Invoice.objects.all().order_by('-invoice_date')
+        serializer = InvoiceSerializer(invoices, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = InvoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            invoice = serializer.save()
+            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class InvoiceDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            serializer = InvoiceSerializer(invoice)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            action = request.data.get('action')
+            if action == 'cancel_invoice':
+                invoice.delete()
+            elif action == 'cancel':
+                invoice.invoice_status = 'Cancelled'
+            elif action == 'save_draft':
+                invoice.invoice_status = 'Draft'
+            elif action == 'send_invoice':
+                invoice.invoice_status = 'Sent'
+            elif action == 'mark_as_paid':
+                invoice.payment_status = 'Paid'
+            else:
+                serializer = InvoiceSerializer(invoice, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(InvoiceSerializer(invoice).data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            invoice.save()
+            if invoice.summary:
+                invoice.summary.save()
+            return Response(InvoiceSerializer(invoice).data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoiceItemView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            item_data = request.data
+            item_data['invoice'] = pk
+            serializer = InvoiceItemSerializer(data=item_data)
+            if serializer.is_valid():
+                item = serializer.save()
+                invoice.items.add(item)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoicePDFView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = [
+                Paragraph(f"Invoice ID: {invoice.INVOICE_ID}", style={'fontName': 'Helvetica-Bold', 'fontSize': 14}),
+                Paragraph(f"Date: {invoice.invoice_date}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+                Paragraph(f"Customer: {invoice.customer.name}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+            ]
+            doc.build(elements)
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.INVOICE_ID}.pdf"'
+            return response
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoiceEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            email = request.data.get('email')
+            if not email:
+                return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            subject = f'Invoice {invoice.INVOICE_ID}'
+            html_message = render_to_string('invoice_email_template.html', {'invoice': invoice})
+            msg = EmailMessage(subject, html_message, to=[email])
+            msg.content_subtype = 'html'
+            msg.send()
+            return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)

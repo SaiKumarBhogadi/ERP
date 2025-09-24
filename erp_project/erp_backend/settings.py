@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'core',
     'crm',
     'purchase',
+    'finance',
     'rest_framework',
     'rest_framework.authtoken', 
     'corsheaders', #add from prakash raj - frontend integration 
