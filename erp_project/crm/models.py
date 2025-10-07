@@ -341,3 +341,155 @@ class OrderSummary(models.Model):
         self.grand_total = self.subtotal - (self.subtotal * self.global_discount / 100) + self.tax_summary + self.shipping_charges + self.rounding_adjustment - self.credit_note_applied
         self.balance_due = self.grand_total - self.amount_paid
         super().save(*args, **kwargs)
+
+
+
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from core.models import Customer, Product, UOM
+from purchase.models import SerialNumber
+from .models import Invoice, SalesOrder
+
+User = get_user_model()
+
+def generate_invoice_return_id():
+    last_return = InvoiceReturn.objects.order_by('-id').first()
+    return f'INVR-{str(last_return.id + 1).zfill(4) if last_return else "0001"}' if last_return else "INVR-0001"
+
+class InvoiceReturnAttachment(models.Model):
+    invoice_return = models.ForeignKey('InvoiceReturn', on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='invoice_return_attachments/')
+
+class InvoiceReturnRemark(models.Model):
+    invoice_return = models.ForeignKey('InvoiceReturn', on_delete=models.CASCADE, related_name='remarks')
+    text = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class InvoiceReturnItem(models.Model):
+    invoice_return = models.ForeignKey('InvoiceReturn', on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    uom = models.CharField(max_length=50, blank=True)
+    invoiced_qty = models.IntegerField(default=0)
+    returned_qty = models.IntegerField(default=0)
+    serial_numbers = models.ManyToManyField(SerialNumber, blank=True)
+    return_reason = models.TextField(blank=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if self.product:
+            self.uom = self.product.uom or ''
+            self.unit_price = self.product.unit_price or 0.00
+            self.tax = self.product.tax or 0.00
+            self.discount = self.product.discount or 0.00
+        self.total = self.returned_qty * self.unit_price * (1 - self.discount / 100) * (1 + self.tax / 100)
+        super().save(*args, **kwargs)
+
+class InvoiceReturnSummary(models.Model):
+    invoice_return = models.OneToOneField('InvoiceReturn', on_delete=models.CASCADE, related_name='summary')
+    original_grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    global_discount = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    return_subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    global_discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, editable=False)
+    rounding_adjustment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    amount_to_refund = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, editable=False)
+
+    def save(self, *args, **kwargs):
+        invoice_return = self.invoice_return
+        self.return_subtotal = sum(item.total for item in invoice_return.items.all())
+        self.global_discount_amount = self.return_subtotal * (self.global_discount / 100)
+        self.amount_to_refund = self.return_subtotal - self.global_discount_amount + self.rounding_adjustment
+        super().save(*args, **kwargs)
+
+class InvoiceReturnHistory(models.Model):
+    invoice_return = models.ForeignKey('InvoiceReturn', on_delete=models.CASCADE, related_name='history')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=100)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class InvoiceReturnComment(models.Model):
+    invoice_return = models.ForeignKey('InvoiceReturn', on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class InvoiceReturn(models.Model):
+    INVOICE_RETURN_ID = models.CharField(max_length=20, unique=True, editable=False, default=generate_invoice_return_id)
+    invoice_return_date = models.DateField(default=timezone.now)
+    sales_order_reference = models.ForeignKey(SalesOrder, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_reference_no = models.CharField(max_length=50, blank=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    email_id = models.EmailField(blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    contact_person = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=[('Draft', 'Draft'), ('Submitted', 'Submitted'), ('Cancelled', 'Cancelled')], default='Draft')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+
+from django.db import models
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from core.models import Customer, Product, UOM
+from purchase.models import SerialNumber
+from .models import InvoiceReturn, SalesOrder
+
+User = get_user_model()
+
+def generate_delivery_note_return_id():
+    last_return = DeliveryNoteReturn.objects.order_by('-id').first()
+    return f'DNR-{str(last_return.id + 1).zfill(4) if last_return else "0001"}' if last_return else "DNR-0001"
+
+class DeliveryNoteReturnAttachment(models.Model):
+    delivery_note_return = models.ForeignKey('DeliveryNoteReturn', on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='delivery_note_return_attachments/')
+
+class DeliveryNoteReturnRemark(models.Model):
+    delivery_note_return = models.ForeignKey('DeliveryNoteReturn', on_delete=models.CASCADE, related_name='remarks')
+    text = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class DeliveryNoteReturnItem(models.Model):
+    delivery_note_return = models.ForeignKey('DeliveryNoteReturn', on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    uom = models.CharField(max_length=50, blank=True)
+    invoiced_qty = models.IntegerField(default=0)
+    returned_qty = models.IntegerField(default=0)
+    serial_numbers = models.ManyToManyField(SerialNumber, blank=True)
+    return_reason = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.product:
+            self.uom = self.product.uom or ''
+        super().save(*args, **kwargs)
+
+class DeliveryNoteReturnHistory(models.Model):
+    delivery_note_return = models.ForeignKey('DeliveryNoteReturn', on_delete=models.CASCADE, related_name='history')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=100)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class DeliveryNoteReturnComment(models.Model):
+    delivery_note_return = models.ForeignKey('DeliveryNoteReturn', on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+class DeliveryNoteReturn(models.Model):
+    DNR_ID = models.CharField(max_length=20, unique=True, editable=False, default=generate_delivery_note_return_id)
+    dnr_date = models.DateField(default=timezone.now)
+    invoice_return_reference = models.ForeignKey(InvoiceReturn, on_delete=models.SET_NULL, null=True, blank=True)
+    customer_reference_no = models.CharField(max_length=50, blank=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+    email_id = models.EmailField(blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    contact_person = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=[('Draft', 'Draft'), ('Submitted', 'Submitted'), ('Cancelled', 'Cancelled')], default='Draft')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

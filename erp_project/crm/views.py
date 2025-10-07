@@ -783,3 +783,297 @@ class InvoiceEmailView(APIView):
             return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import io
+from .models import InvoiceReturn, InvoiceReturnItem, InvoiceReturnAttachment, InvoiceReturnRemark, InvoiceReturnSummary, InvoiceReturnHistory, InvoiceReturnComment
+from .serializers import InvoiceReturnSerializer, InvoiceReturnItemSerializer, InvoiceReturnAttachmentSerializer, InvoiceReturnRemarkSerializer, InvoiceReturnSummarySerializer, InvoiceReturnHistorySerializer, InvoiceReturnCommentSerializer
+
+class InvoiceReturnListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        invoice_returns = InvoiceReturn.objects.all().order_by('-invoice_return_date')
+        status_filter = request.query_params.get('status', 'All')
+        customer_filter = request.query_params.get('customer', 'All')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if status_filter != 'All':
+            invoice_returns = invoice_returns.filter(status=status_filter)
+        if customer_filter != 'All':
+            invoice_returns = invoice_returns.filter(customer__name__icontains=customer_filter)
+        if date_from:
+            invoice_returns = invoice_returns.filter(invoice_return_date__gte=date_from)
+        if date_to:
+            invoice_returns = invoice_returns.filter(invoice_return_date__lte=date_to)
+        serializer = InvoiceReturnSerializer(invoice_returns, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = InvoiceReturnSerializer(data=request.data)
+        if serializer.is_valid():
+            invoice_return = serializer.save()
+            return Response(InvoiceReturnSerializer(invoice_return).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class InvoiceReturnDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            serializer = InvoiceReturnSerializer(invoice_return)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            action = request.data.get('action')
+            if action == 'cancel':
+                invoice_return.status = 'Cancelled'
+            elif action == 'save_draft':
+                invoice_return.status = 'Draft'
+            elif action == 'submit':
+                invoice_return.status = 'Submitted'
+            else:
+                serializer = InvoiceReturnSerializer(invoice_return, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(InvoiceReturnSerializer(invoice_return).data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            invoice_return.save()
+            if invoice_return.summary:
+                invoice_return.summary.save()
+            return Response(InvoiceReturnSerializer(invoice_return).data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            invoice_return.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoiceReturnItemView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            item_data = request.data
+            item_data['invoice_return'] = pk
+            serializer = InvoiceReturnItemSerializer(data=item_data)
+            if serializer.is_valid():
+                item = serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk, item_pk):
+        try:
+            item = InvoiceReturnItem.objects.get(id=item_pk, invoice_return_id=pk)
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoiceReturnPDFView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = [
+                Paragraph(f"Invoice Return ID: {invoice_return.INVOICE_RETURN_ID}", style={'fontName': 'Helvetica-Bold', 'fontSize': 14}),
+                Paragraph(f"Date: {invoice_return.invoice_return_date}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+                Paragraph(f"Customer: {invoice_return.customer.name}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+            ]
+            doc.build(elements)
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="invoice_return_{invoice_return.INVOICE_RETURN_ID}.pdf"'
+            return response
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class InvoiceReturnEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            invoice_return = InvoiceReturn.objects.get(id=pk)
+            email = request.data.get('email')
+            if not email:
+                return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            subject = f'Invoice Return {invoice_return.INVOICE_RETURN_ID}'
+            html_message = render_to_string('invoice_return_email.html', {'invoice_return': invoice_return})
+            msg = EmailMessage(subject, html_message, to=[email])
+            msg.content_subtype = 'html'
+            msg.send()
+            return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Invoice Return not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+import io
+from .models import DeliveryNoteReturn, DeliveryNoteReturnItem, DeliveryNoteReturnAttachment, DeliveryNoteReturnRemark, DeliveryNoteReturnHistory, DeliveryNoteReturnComment
+from .serializers import DeliveryNoteReturnSerializer, DeliveryNoteReturnItemSerializer, DeliveryNoteReturnAttachmentSerializer, DeliveryNoteReturnRemarkSerializer, DeliveryNoteReturnHistorySerializer, DeliveryNoteReturnCommentSerializer
+
+class DeliveryNoteReturnListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        returns = DeliveryNoteReturn.objects.all().order_by('-dnr_date')
+        status_filter = request.query_params.get('status', 'All')
+        customer_filter = request.query_params.get('customer', 'All')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if status_filter != 'All':
+            returns = returns.filter(status=status_filter)
+        if customer_filter != 'All':
+            returns = returns.filter(customer__name__icontains=customer_filter)
+        if date_from:
+            returns = returns.filter(dnr_date__gte=date_from)
+        if date_to:
+            returns = returns.filter(dnr_date__lte=date_to)
+        serializer = DeliveryNoteReturnSerializer(returns, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = DeliveryNoteReturnSerializer(data=request.data)
+        if serializer.is_valid():
+            return_obj = serializer.save()
+            return Response(DeliveryNoteReturnSerializer(return_obj).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class DeliveryNoteReturnDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            serializer = DeliveryNoteReturnSerializer(return_obj)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            action = request.data.get('action')
+            if action == 'cancel':
+                return_obj.status = 'Cancelled'
+            elif action == 'save_draft':
+                return_obj.status = 'Draft'
+            elif action == 'submit':
+                return_obj.status = 'Submitted'
+            else:
+                serializer = DeliveryNoteReturnSerializer(return_obj, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(DeliveryNoteReturnSerializer(return_obj).data, status=status.HTTP_200_OK)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return_obj.save()
+            return Response(DeliveryNoteReturnSerializer(return_obj).data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            return_obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeliveryNoteReturnItemView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            item_data = request.data
+            item_data['delivery_note_return'] = pk
+            serializer = DeliveryNoteReturnItemSerializer(data=item_data)
+            if serializer.is_valid():
+                item = serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request, pk, item_pk):
+        try:
+            item = DeliveryNoteReturnItem.objects.get(id=item_pk, delivery_note_return_id=pk)
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return Item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeliveryNoteReturnPDFView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            elements = [
+                Paragraph(f"DNR ID: {return_obj.DNR_ID}", style={'fontName': 'Helvetica-Bold', 'fontSize': 14}),
+                Paragraph(f"Date: {return_obj.dnr_date}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+                Paragraph(f"Customer: {return_obj.customer.name}", style={'fontName': 'Helvetica', 'fontSize': 12}),
+            ]
+            doc.build(elements)
+            buffer.seek(0)
+            response = HttpResponse(buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="delivery_note_return_{return_obj.DNR_ID}.pdf"'
+            return response
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)
+
+class DeliveryNoteReturnEmailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            return_obj = DeliveryNoteReturn.objects.get(id=pk)
+            email = request.data.get('email')
+            if not email:
+                return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+            subject = f'Delivery Note Return {return_obj.DNR_ID}'
+            html_message = render_to_string('delivery_note_return_email.html', {'delivery_note_return': return_obj})
+            msg = EmailMessage(subject, html_message, to=[email])
+            msg.content_subtype = 'html'
+            msg.send()
+            return Response({'message': 'Email sent successfully'}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({'error': 'Delivery Note Return not found'}, status=status.HTTP_404_NOT_FOUND)

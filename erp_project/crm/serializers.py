@@ -359,3 +359,148 @@ class InvoiceSerializer(serializers.ModelSerializer):
             instance.summary.delete()
             OrderSummary.objects.create(invoice=instance, **summary_data)
         return instance
+    
+
+
+from rest_framework import serializers
+from .models import InvoiceReturn, InvoiceReturnItem, InvoiceReturnAttachment, InvoiceReturnRemark, InvoiceReturnSummary, InvoiceReturnHistory, InvoiceReturnComment
+from core.serializers import CustomerSerializer, ProductSerializer
+from crm.serializers import  SalesOrderSerializer
+from purchase.serializers import SerialNumberSerializer  # Assumed
+
+class InvoiceReturnAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceReturnAttachment
+        fields = ['id', 'file']
+
+class InvoiceReturnRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceReturnRemark
+        fields = ['id', 'text', 'created_by', 'timestamp']
+
+class InvoiceReturnItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+    serial_numbers = SerialNumberSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = InvoiceReturnItem
+        fields = ['id', 'product', 'uom', 'invoiced_qty', 'returned_qty', 'serial_numbers', 'return_reason', 'unit_price', 'tax', 'discount', 'total']
+
+    def create(self, validated_data):
+        serial_numbers_data = validated_data.pop('serial_numbers', [])
+        item = InvoiceReturnItem.objects.create(**validated_data)
+        if serial_numbers_data:
+            item.serial_numbers.set(serial_numbers_data)
+        return item
+
+class InvoiceReturnSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceReturnSummary
+        fields = ['id', 'original_grand_total', 'global_discount', 'return_subtotal', 'global_discount_amount', 'rounding_adjustment', 'amount_to_refund']
+
+class InvoiceReturnHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceReturnHistory
+        fields = ['id', 'user', 'action', 'timestamp']
+
+class InvoiceReturnCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceReturnComment
+        fields = ['id', 'user', 'comment', 'timestamp']
+
+class InvoiceReturnSerializer(serializers.ModelSerializer):
+    items = InvoiceReturnItemSerializer(many=True, required=False)
+    attachments = InvoiceReturnAttachmentSerializer(many=True, required=False)
+    remarks = InvoiceReturnRemarkSerializer(many=True, required=False)
+    summary = InvoiceReturnSummarySerializer(required=False)
+    sales_order_reference = SalesOrderSerializer()
+    customer = CustomerSerializer()
+
+    class Meta:
+        model = InvoiceReturn
+        fields = ['id', 'INVOICE_RETURN_ID', 'invoice_return_date', 'sales_order_reference', 'customer_reference_no', 'customer', 'email_id', 'phone_number', 'contact_person', 'status', 'items', 'attachments', 'remarks', 'summary', 'history', 'comments']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        summary_data = validated_data.pop('summary', None)
+        invoice_return = InvoiceReturn.objects.create(**validated_data)
+        for item_data in items_data:
+            item_serializer = InvoiceReturnItemSerializer(data=item_data)
+            if item_serializer.is_valid():
+                item = item_serializer.save(invoice_return=invoice_return)
+        for attachment_data in attachments_data:
+            InvoiceReturnAttachment.objects.create(invoice_return=invoice_return, **attachment_data)
+        for remark_data in remarks_data:
+            InvoiceReturnRemark.objects.create(invoice_return=invoice_return, **remark_data)
+        if summary_data:
+            InvoiceReturnSummary.objects.create(invoice_return=invoice_return, **summary_data)
+        return invoice_return
+    
+
+from rest_framework import serializers
+from .models import DeliveryNoteReturn, DeliveryNoteReturnItem, DeliveryNoteReturnAttachment, DeliveryNoteReturnRemark, DeliveryNoteReturnHistory, DeliveryNoteReturnComment
+from core.serializers import CustomerSerializer, ProductSerializer
+from purchase.serializers import SerialNumberSerializer  
+from .serializers import InvoiceReturnSerializer  
+
+class DeliveryNoteReturnAttachmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteReturnAttachment
+        fields = ['id', 'file']
+
+class DeliveryNoteReturnRemarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteReturnRemark
+        fields = ['id', 'text', 'created_by', 'timestamp']
+
+class DeliveryNoteReturnItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+    serial_numbers = SerialNumberSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DeliveryNoteReturnItem
+        fields = ['id', 'product', 'uom', 'invoiced_qty', 'returned_qty', 'serial_numbers', 'return_reason']
+
+    def create(self, validated_data):
+        serial_numbers_data = validated_data.pop('serial_numbers', [])
+        item = DeliveryNoteReturnItem.objects.create(**validated_data)
+        if serial_numbers_data:
+            item.serial_numbers.set(serial_numbers_data)
+        return item
+
+class DeliveryNoteReturnHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteReturnHistory
+        fields = ['id', 'user', 'action', 'timestamp']
+
+class DeliveryNoteReturnCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryNoteReturnComment
+        fields = ['id', 'user', 'comment', 'timestamp']
+
+class DeliveryNoteReturnSerializer(serializers.ModelSerializer):
+    items = DeliveryNoteReturnItemSerializer(many=True, required=False)
+    attachments = DeliveryNoteReturnAttachmentSerializer(many=True, required=False)
+    remarks = DeliveryNoteReturnRemarkSerializer(many=True, required=False)
+    invoice_return_reference = InvoiceReturnSerializer()
+
+    class Meta:
+        model = DeliveryNoteReturn
+        fields = ['id', 'DNR_ID', 'dnr_date', 'invoice_return_reference', 'customer_reference_no', 'customer', 'email_id', 'phone_number', 'contact_person', 'status', 'items', 'attachments', 'remarks', 'history', 'comments']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        attachments_data = validated_data.pop('attachments', [])
+        remarks_data = validated_data.pop('remarks', [])
+        delivery_note_return = DeliveryNoteReturn.objects.create(**validated_data)
+        for item_data in items_data:
+            item_serializer = DeliveryNoteReturnItemSerializer(data=item_data)
+            if item_serializer.is_valid():
+                item = item_serializer.save(delivery_note_return=delivery_note_return)
+        for attachment_data in attachments_data:
+            DeliveryNoteReturnAttachment.objects.create(delivery_note_return=delivery_note_return, **attachment_data)
+        for remark_data in remarks_data:
+            DeliveryNoteReturnRemark.objects.create(delivery_note_return=delivery_note_return, **remark_data)
+        return delivery_note_return
